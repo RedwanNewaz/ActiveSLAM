@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1001</width>
+    <height>898</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="1" column="4">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" rowspan="5">
+     <layout class="QVBoxLayout" name="verticalLayout_6"/>
+    </item>
+    <item row="2" column="4">
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QPushButton" name="button_motion">
+       <property name="geometry">
+        <rect>
+         <x>120</x>
+         <y>0</y>
+         <width>99</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Set Motion</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_test">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>0</y>
+         <width>99</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>test</string>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>CPU Usage</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" rowspan="5">
+     <layout class="QVBoxLayout" name="verticalLayout_7">
+      <item>
+       <widget class="QLabel" name="image_view">
+        <property name="text">
+         <string>ImageLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPlainTextEdit" name="textStatus">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>300</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Camera frame </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="topics"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QProgressBar" name="cpu_usage">
+        <property name="value">
+         <number>24</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="3" column="4">
+     <widget class="Line" name="line_3">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QTimeEdit" name="runTime">
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="frame">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QPushButton" name="buttonMoveit">
+        <property name="text">
+         <string>Initialize</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonStart">
+        <property name="text">
+         <string>Start</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonStop">
+        <property name="text">
+         <string>Stop</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_10">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonTakeOff">
+        <property name="text">
+         <string>TakeOff</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonLand">
+        <property name="text">
+         <string>Land</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonToggle">
+        <property name="text">
+         <string>ToggleCam</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="buttonGraph">
+        <property name="text">
+         <string>Graph</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="action">
+        <property name="title">
+         <string>     Action</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QRadioButton" name="simulation">
+           <property name="text">
+            <string>Simulation</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="experiment">
+           <property name="text">
+            <string>Experiment</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="test">
+           <property name="text">
+            <string>Test</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="notify">
+        <property name="text">
+         <string>Robot State</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Battery Level</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="displayBattery">
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="0" column="4">
+     <widget class="QGroupBox" name="groupBox">
+      <property name="minimumSize">
+       <size>
+        <width>240</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="title">
+       <string>PD TUNER</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>160</y>
+         <width>188</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QSlider" name="pitchKp">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSlider" name="pitchKd">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>240</y>
+         <width>188</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QSlider" name="altKp">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSlider" name="altKd">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget_3">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>330</y>
+         <width>188</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QSlider" name="YawKp">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSlider" name="YawKd">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QLabel" name="label_4">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>60</y>
+         <width>101</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Roll (kp, kd  )</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_5">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>140</y>
+         <width>101</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Pitch (kp, kd  )</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_6">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>220</y>
+         <width>101</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Altd (kp, kd  )</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_7">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>310</y>
+         <width>101</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Yaw(kp, kd  )</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pushButton">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>380</y>
+         <width>99</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Set Tune</string>
+       </property>
+      </widget>
+      <widget class="QLCDNumber" name="pdDisplay">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>20</y>
+         <width>91</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="smallDecimalPoint">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>80</y>
+         <width>188</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QSlider" name="rollKp">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSlider" name="rollKd">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>430</y>
+         <width>241</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Robot Position (x, y, z)</string>
+       </property>
+       <widget class="QLCDNumber" name="robot_x">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLCDNumber" name="robot_y">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLCDNumber" name="robot_z">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>530</y>
+         <width>241</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Robot Orientation (R, P, Y)</string>
+       </property>
+       <widget class="QLCDNumber" name="robot_x_3">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLCDNumber" name="robot_y_3">
+        <property name="geometry">
+         <rect>
+          <x>90</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLCDNumber" name="robot_z_3">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>30</y>
+          <width>61</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="smallDecimalPoint">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>380</y>
+         <width>99</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Save Gain</string>
+       </property>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>630</y>
+         <width>221</width>
+         <height>171</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>Motion Type</string>
+       </property>
+       <widget class="QRadioButton" name="p2p">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>20</y>
+          <width>117</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Point2point</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="sb">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>50</y>
+          <width>117</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Square box</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="ca">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>80</y>
+          <width>117</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Circular area</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="tc">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>110</y>
+          <width>161</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Trajectory control</string>
+        </property>
+       </widget>
+      </widget>
+      <zorder>layoutWidget</zorder>
+      <zorder>layoutWidget</zorder>
+      <zorder>layoutWidget_2</zorder>
+      <zorder>layoutWidget_3</zorder>
+      <zorder>label_4</zorder>
+      <zorder>label_5</zorder>
+      <zorder>label_6</zorder>
+      <zorder>label_7</zorder>
+      <zorder>pushButton</zorder>
+      <zorder>pdDisplay</zorder>
+      <zorder>groupBox_3</zorder>
+      <zorder>groupBox_5</zorder>
+      <zorder>pushButton_2</zorder>
+      <zorder>groupBox_4</zorder>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1001</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuJAIST_QUAD">
+    <property name="title">
+     <string>JAIST_QUAD</string>
+    </property>
+   </widget>
+   <addaction name="menuJAIST_QUAD"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>LeftToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
