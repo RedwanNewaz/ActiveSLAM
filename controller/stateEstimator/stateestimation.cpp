@@ -15,6 +15,9 @@
     zOFFSET=false;
     zHeightoffset=navdataCount=0;
 
+    //path planner localization
+    robot_srv = nh.advertiseService("localization",&stateEstimation::localization,this);
+
     //yaw
     lastYaw=0;
     last_dot_yaw=0;
@@ -325,6 +328,18 @@ stateEstimation::eigenspace stateEstimation::state2eign(statespace state){
 
 
  //SERVICES
+bool stateEstimation::localization(active_slam::obstacle::Request  &req,
+         active_slam::obstacle::Response &res)
+{
+    ROS_INFO_STREAM("localization message received");
+
+    res.x=ukfState.x;//robot x
+    res.y=ukfState.y;//robot y
+
+    return true;
+
+}
+
  std::vector<double> stateEstimation:: stateDisplay(SENSOR_DATA option){
        statespace state;
        std::vector<double> robot;

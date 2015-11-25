@@ -39,9 +39,9 @@ octomap_search::octomap_search()
 }
 
 
-void octomap_search::updateRobot(vector<float> pos){
-    rob_col_x=pos.at(0);
-    rob_col_y=pos.at(1);
+void octomap_search::updateRobot(float x, float y){
+    rob_col_x=x;
+    rob_col_y=y;
 //    rob_col_z=pos.at(2);
 
 }
@@ -363,29 +363,30 @@ void octomap_search::obstacle_avoid(double*A,double rx,double ry){
 
     A[0]=A[1]=0;
 
-
-
+bool obs=false;
     for (float an=0; an<=360*deg; an+=10*deg){
 
             double x=rx+cos(an);
             double y=ry+sin(an);
            if(octree_search(x,y)){
-
-                   if(   0<an && an<=45  )      A[0]+=1;
-                   else if(  45<an && an<=135 )    A[1]-=1;
-                   else if( 135<an && an<=225 )   A[0]-=1;
-                   else if( 225<an && an<=315 )   A[1]+=1;
-                   else if( 315<an && an<=360 )   A[0]+=1;
+               obs=true;
+               double bn=an/deg;
+                ROS_INFO_STREAM("obstacle angle "<< bn);
+                   if(   0<bn && bn<=45  )      A[0]+=1;
+                   else if(  45<bn && bn<=135 )    A[1]+=1;
+                   else if( 135<bn && bn<=225 )   A[0]+=-1;
+                   else if( 225<bn && bn<=315 )   A[1]+=-1;
+                   else if( 315<bn && bn<=360 )   A[0]+=1;
 
            }
     }
 
 
 
-
+if(obs){
     ROS_INFO_STREAM("obs "<<A[0]<<"\t"<<A[1]);
     A[0]/=abs(A[0]);
-    A[1]/=abs(A[1]);
+    A[1]/=abs(A[1]);}
 
 }
 

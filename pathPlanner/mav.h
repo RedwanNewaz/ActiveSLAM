@@ -40,6 +40,7 @@ private:
      ros::NodeHandle nh_;
      std::vector<double> roboVect;
      bool p2pNav,ScaleFix;
+     ros::ServiceClient robot_srv;
 
 
      //OCTOMAP

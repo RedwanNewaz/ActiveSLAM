@@ -5,7 +5,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     ros::init(argc,argv,"planningServer");
-    ROS_INFO("mini map supported by mini_mav");
+    ROS_INFO("planner vs 2.00");
 
     mav uav;
     uav.run();

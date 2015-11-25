@@ -12,7 +12,7 @@ mav::mav()
     planner_talk=nh_.advertise<std_msgs::String>("jaistquad/motionplan",1);
     service = nh_.advertiseService("motionplan",&mav::talk,this);
     srv_obs = nh_.advertiseService("obstacle",&mav::collision,this);
-
+    robot_srv=nh_.serviceClient<active_slam::obstacle>("localization");
 
 
 
@@ -27,9 +27,9 @@ mav::~mav()
 
 
 void mav::run(){
-        ROS_INFO("SENSOR SUBSCRIBTION ENABLE");
+        ROS_INFO("SENSOR SUBSCRIBTION ENABLE vs 2.00");
         sleep(1);
-        map_search->debugger("path planner is intialized");
+        map_search->debugger("path planner vs 2.00 is intialized");
 
       //ORB_SLAM DEPENDECIES
         orbTraker=nh_.subscribe("ORB_SLAM/Debug",10,&mav::takerCallback, this);
@@ -108,43 +108,53 @@ void mav::takerCallback(const std_msgs::String &msg){
 
 void mav::poseCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr  msg){
 
-    vector<float>robot;
-    robot.push_back(msg->pose.pose.position.x);
-    robot.push_back(msg->pose.pose.position.y);
-    map_search->updateRobot(robot);
+
+    map_search->updateRobot(msg->pose.pose.position.x,msg->pose.pose.position.y);
    ROS_INFO("pose (%f, %f) ",msg->pose.pose.position.x,msg->pose.pose.position.y);
 }
 
 
 void mav::goalCallback(const geometry_msgs::PoseStampedConstPtr msg){
-
+    ROS_INFO_STREAM("Goal received");
     if(p2pNav){
-        map_search->goalPublisher(msg->pose.position.x,msg->pose.position.y);
-//         map_search->debugger("new goal is arrived");
+        active_slam::obstacle robo;
+        robo.request.id= robo.request.state_x= robo.request.state_y=1;
+        if (robot_srv.call(robo)){
+            ROS_INFO("Current Robot (%f, %f)",robo.response.x,robo.response.y);
+
+             map_search->updateRobot(robo.response.x,robo.response.y);
+
+            map_search->goalPublisher(msg->pose.position.x,msg->pose.position.y);
+            stringstream ss;
+            ss<< "robot ("<< robo.response.x<< ", "<< robo.response.y<<") ";
+            ss<< "Goal ("<< msg->pose.position.x<< ", "<< msg->pose.position.y<<") ";
+            map_search->debugger(ss.str());
+        }
+         else
+                map_search->debugger("Error to retrive new goal");
     }
     else{
+        active_slam::obstacle robo;
+        robo.request.id= robo.request.state_x= robo.request.state_y=1;
+        if (robot_srv.call(robo)){
+            ROS_INFO("Current Robot (%f, %f)",robo.response.x,robo.response.y);
+
+             map_search->updateRobot(robo.response.x,robo.response.y);
+            stringstream ss;
+            ss<< "robot ("<< robo.response.x<< ", "<< robo.response.y<<") ";
+            ss<< "Goal ("<< msg->pose.position.x<< ", "<< msg->pose.position.y<<") ";
+            map_search->debugger(ss.str());
+        }
+         else
+                map_search->debugger("Error to retrive new goal");
+
+
         vector<float>robot;
         robot.push_back(msg->pose.position.x);
         robot.push_back(msg->pose.position.y);
         map_search->find_status();
         map_search->foundPath(robot);
     }
-
-//    QPointF goal_rviz(msg->pose.position.x,msg->pose.position.y);
-//    mutex.lock();
-
-
-//    double 2Dmap[info.width ][info.height];
-
-//    msg->data[i+ info.width * int(W_t_G.y());
-
-//    mutex.unlock();
-
-
-
-
-
-
 
 
 }

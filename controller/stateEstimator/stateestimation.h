@@ -2,6 +2,7 @@
 #define STATEESTIMATION_H
 
 #include "../header.h"
+#include "active_slam/obstacle.h"
 #define nano 1000000000.00
 #define T6 1000000.00
 #define T3 1000.00
@@ -138,6 +139,9 @@ private:
     ros::NodeHandle nh;
     ros::Timer timer;
 
+    //path planner localization
+    ros::ServiceServer robot_srv;
+
 
 protected:
     double timeDiff(ros::Time start);
@@ -146,6 +150,8 @@ protected:
     void timerCallback(const ros::TimerEvent& e);
     stateEstimation::statespace mirrorTransform(statespace);
     bool computeVoScale();
+    bool localization(active_slam::obstacle::Request  &req,
+                      active_slam::obstacle::Response &res);
 
 
 

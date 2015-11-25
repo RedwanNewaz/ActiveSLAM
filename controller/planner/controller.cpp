@@ -371,8 +371,12 @@ void controller::run(const ros::TimerEvent& e){
 }
 
 
+//update path planner
+
+
 
 //utilities
+
  void controller::obstacleChannel(double scale,double alt){
      active_slam::obstacle obs;
      obs.request.id=1;
@@ -393,7 +397,7 @@ bool controller::obs_state(int * A){
      if (obs_srv.call(obs)){
          A[0]=obs.response.x;
          A[1]=obs.response.y;
-             ROS_INFO("obs(%d, %d )",obs.response.x,obs.response.y);
+//             ROS_INFO("obs(%d, %d )",obs.response.x,obs.response.y);
 
      }
 

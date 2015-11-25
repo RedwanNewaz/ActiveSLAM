@@ -23,7 +23,7 @@ public:
     bool call_octomap();
     void evaluateNode();
     void find_status();
-    void updateRobot(vector<float>);
+    void updateRobot(float x, float y);
     void check_position_colision(const geometry_msgs::PoseStamped pose);
     void getOctomap( octomap_msgs::Octomap::ConstPtr msg );
     void foundPath(vector<float>goal);
