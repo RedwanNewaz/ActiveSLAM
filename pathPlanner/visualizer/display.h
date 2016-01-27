@@ -13,6 +13,7 @@ public:
     display();
     void obstacleMap( item collision, bool search=false);
     void pathShow(list<state>);
+    void pathViz(std::vector<double> x,std::vector<double> y);
     void mapPublisher(const boost::shared_ptr<const sensor_msgs::PointCloud2>& input);
 private:
     ros::Publisher robot_pub;

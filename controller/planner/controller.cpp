@@ -1,7 +1,19 @@
+/*
+ * 1) three types of path can be controlled : square,p2p and traj
+ * 2) controller frequecy is 30 HZ
+ * 3) For controlling XYZ we use PD controller and for Yaw only P controller
+ * 4) Prediction based on controller gain is not implemented yet.
+ * 5) DATA LOG: Time stamp, position and control command
+ * 6) PID GAIN can be recorded to txt file
+ */
+
+
 #include "controller.h"
 #include <QFile>
 #include <QStringList>
 #include "active_slam/obstacle.h"
+#include "geometry_msgs/Quaternion.h"
+#include "std_msgs/Empty.h"
 
 
 
@@ -15,19 +27,20 @@ controller::controller()
     debugger_cntrl=nh.advertise<std_msgs::String>("jaistquad/debug",1);
     service = nh.advertiseService("pid_gains",&controller::gainchange,this);
     obs_srv=nh.serviceClient<active_slam::obstacle>("obstacle");
+    xbee	   = nh.subscribe("xbeeReading",50, &controller::xbeeRead, this);
+    land_pub	   = nh.advertise<std_msgs::Empty>(nh.resolveName("ardrone/land"),1);
 
 
-    count=resetController=0;
 
-//  circle Initialize
-	Circletimer = nh.createTimer(ros::Duration(10), &controller::circularMotion,this);
-	EnableCircle=false;
-    circleCount=traj.index=0;
-	
+
+
+
+
 //  controller intialize
+     count=obstacleStatus=resetController=traj.index==0;
      for(int i=0;i<4;i++)
          input.push_back(0);
-    timer = nh.createTimer(ros::Duration(0.03), &controller::run,this);
+     timer = nh.createTimer(ros::Duration(0.03), &controller::run,this);
 
 //  select motion: type 1/p2p 2/square 3/circular 4/traj follower
     motionType(4);
@@ -39,7 +52,7 @@ controller::controller()
     inputApply=false;
     for (int i=0;i<4;i++){
         acceleration.push_back(0);
-        velocity.push_back(0);      
+        velocity.push_back(0);
 
     }
 
@@ -51,6 +64,13 @@ controller::controller()
     qDebug()<<fileName;
 }
 
+
+void controller::xbeeRead(const geometry_msgs::QuaternionConstPtr msg){
+    lightSensor[0]=msg->x;
+    lightSensor[1]=msg->y;
+    lightSensor[2]=msg->z;
+    obstacleStatus=msg->w;
+}
 
 //user input
 bool controller::gainchange(active_slam::pidgain::Request  &req,
@@ -166,8 +186,8 @@ void controller::executingTraj(){
 void controller::control(vector<double> dmsg){
 
 
-	setpoint.clear();
-	
+    setpoint.clear();
+
     for (int i=0;i<4;i++){
         if(!EnableCircle)
         setpoint.push_back(dmsg.at(i));
@@ -188,12 +208,34 @@ void controller::control(vector<double> dmsg){
 }
 
  //controller function
+void controller::HoveringMode(){
+    Eigen::Vector4d cmd;
+    for(int i=0;i<4;i++)
+        cmd(i)=0;
+
+    //AVOID OBSTACLES
+    switch(obstacleStatus){
+        case 2: cmd(0)=UNITSTEP; ROS_INFO("MOVING RIGHT");  break; //   LEFT IS OCCUPIED ROLL RIGHT
+        case 3: cmd(0)=-UNITSTEP;ROS_INFO("MOVING LEFT");break; //   RIGHT IS OCCUPIED ROLL LEFT
+        case 5: land_pub.publish(std_msgs::Empty());ROS_INFO("LANDING....");break; //   LAND
+
+    }
+
+
+    ControlCommand c;
+    c.roll=cmd(0);   //moving X direction
+    c.pitch=cmd(1); //moving Y direction
+    c.gaz=cmd(2);    //moving Z direction
+    c.yaw=cmd(3); //change Yaw
+    cmdPublish(c);
+}
+
 void controller::run(const ros::TimerEvent& e){
 
-    if(!state_update && !compute_X_error())return;
+    if(!state_update && !compute_X_error())
+    {HoveringMode();
+        return;}
     if(controller_Status==IDLE || controller_Status!=EXECUTING ||testingMode)return;
-
-
     Eigen::Vector4d u_cmd= Ar_drone_input();
     ControlCommand c;
     c.roll=u_cmd(0);   //moving X direction
@@ -203,9 +245,6 @@ void controller::run(const ros::TimerEvent& e){
     cmdPublish(c);
     inputApply=true;
     state_update=false;
-
-
-
  }
 
  void controller::stateUpdate(vector<double> tmsg){
@@ -234,7 +273,7 @@ void controller::run(const ros::TimerEvent& e){
     state_update=true;
     mutex.unlock();
 
-     if(testingMode)test();
+
  }
 
 
@@ -257,43 +296,50 @@ void controller::run(const ros::TimerEvent& e){
 
 
  Eigen::Vector4d controller::Ar_drone_input(){
-    //PD GAIN
-
+    //UPDATE CMD BASED ON PD GAIN
     Eigen::Vector4d cmd=kp*X_error+kd*X_dot_error;
 
+    // ROUNDING INPUTS
+    float max=cmd.maxCoeff();
+    for(int i=0;i<4;i++)
+        if(abs(cmd(i))<0.33*abs(max))// TOO SMALL!
+            cmd(i)=0;
+        else
+            cmd(i)=cmd(i)/abs(cmd(i))*UNITSTEP;
 
-    // YAW
-    double max_yaw=30*degree;
-    cmd[3] = std::min(max_yaw,std::max(-max_yaw,(double)cmd[3]));
-    if (cmd[3]<max_yaw/2)
-        cmd[3]=0;
+    // MAKE YAW CONTROLLER SLAGGISH
+    double max_yaw=10*degree;
+    if (abs(X_error(3))<max_yaw)
+        cmd(3)=0;
     else
-         cmd[3]/=UNITSTEP;
+         cmd(3)=X_error(3)/abs(X_error(3));
 
+    // IF ROBOT FINDS THE DESTINATION OR OBSTACLE DETECTED
+    if( goalConverage()||obstacleStatus)
+        for(int i=0;i<4;i++)
+            cmd(i)=0;
 
+    //AVOID OBSTACLES
+    /*
+            c.roll=u_cmd(0);   //moving X direction
+            c.pitch=u_cmd(1); //moving Y direction
+            c.gaz=u_cmd(2);    //moving Z direction
+            c.yaw=u_cmd(3); //change Yaw
+     */
+    switch(obstacleStatus){
+        case 2: cmd(0)=UNITSTEP;break; //   LEFT IS OCCUPIED ROLL RIGHT
+        case 3: cmd(0)=-UNITSTEP;break; //   RIGHT IS OCCUPIED ROLL LEFT
+        case 5: land_pub.publish(std_msgs::Empty());break; //   LAND
 
-
-    cmd=cmd*UNITSTEP;
-//ROS_INFO_STREAM("computed "<<cmd);
-    input.clear();
-    for(int i=0;i<4;i++){
-        switch(i){
-        case 0:
-            if(abs(cmd(i))>1)cmd(i)=UNITSTEP*cmd(i)/abs(cmd(i));
-            break;
-        case 1:
-            if(abs(cmd(i))>1)cmd(i)=UNITSTEP*cmd(i)/abs(cmd(i));
-            break;
-        case 2:
-            if(abs(cmd(i))>0.2)cmd(i)=0.2*UNITSTEP*cmd(i)/abs(cmd(i));
-            break;
-        case 3:
-            if(abs(cmd(i))>0.5)cmd(i)=0.5*UNITSTEP*cmd(i)/abs(cmd(i));
-            break;
-        }
-       input.push_back(cmd(i));
     }
-//    dataWrite();
+
+
+    // RECORD STATE & CMD TO A TXT FILE
+    input.clear();
+    for(int i=0;i<4;i++)
+        input.push_back(cmd(i));
+    dataWrite();
+
     return cmd;
 
 }
@@ -320,7 +366,7 @@ void controller::run(const ros::TimerEvent& e){
     double error=0;
     for (int i=0;i<2;i++)
         error+=pow(setpoint.at(i)-X(i),2);
-//check goal radius
+        //check goal radius
     if(sqrt(error)<STOP){
 
          ROS_INFO_STREAM("Target "<< sqrt(error) <<" Achieved "<< resetController);
@@ -339,7 +385,7 @@ void controller::run(const ros::TimerEvent& e){
         }
 
         return true;}
-//check unstable vehicle
+        //check unstable vehicle
     else if(abs(velocity.at(0)>MAX_VEL)||abs(velocity.at(1)>MAX_VEL)){
         ROS_INFO_STREAM("stablizing system ");
         return true;}
@@ -350,20 +396,12 @@ void controller::run(const ros::TimerEvent& e){
 
  // published command (output)
  void controller::cmdPublish(ControlCommand cmd){
-
-
     geometry_msgs::Twist cmdT;
     cmdT.angular.z = cmd.yaw;
-
     cmdT.linear.z = cmd.gaz;
     cmdT.linear.x = cmd.pitch;
     cmdT.linear.y = -cmd.roll;
-     if( goalConverage()){
-        cmdT.linear.z = 0;
-        cmdT.linear.x = 0;
-        cmdT.linear.y = 0;
-        cmdT.angular.z =0;
-     }
+
     mutex.lock();
     vel_pub.publish(cmdT);
     mutex.unlock();
@@ -371,39 +409,7 @@ void controller::run(const ros::TimerEvent& e){
 }
 
 
-//update path planner
-
-
-
-//utilities
-
- void controller::obstacleChannel(double scale,double alt){
-     active_slam::obstacle obs;
-     obs.request.id=1;
-     obs.request.state_x=scale;
-     obs.request.state_y=alt;
-     if (obs_srv.call(obs))
-         ROS_INFO_STREAM("Scaled Fixing requested");
- }
-
-bool controller::obs_state(int * A){
-    if(!plan) return false;
-    active_slam::obstacle obs;
-
-    A[0]=A[1]=0;
-    obs.request.id=2;
-    obs.request.state_x=X(0);
-    obs.request.state_y=X(1);
-     if (obs_srv.call(obs)){
-         A[0]=obs.response.x;
-         A[1]=obs.response.y;
-//             ROS_INFO("obs(%d, %d )",obs.response.x,obs.response.y);
-
-     }
-
-    return true;
-}
-
+//----------------------------------STORE PID GAIN-----------------------------------------------------------------
 void controller::wrtieGain(){
     QFile file("/home/redwan/Desktop/pidtune.txt");
     if (file.open(QIODevice::WriteOnly)){
@@ -419,16 +425,12 @@ void controller::wrtieGain(){
 }
 
 void controller:: readGain(){
-    //    kp<<KpX,0,0,0,0,KpY,0,0,0,0,KpZ,0,0,0,0,KpS;
-    //    kd<<KdX,0,0,0,0,KdY,0,0,0,0,KdZ,0,0,0,0,KdS;
-
     QFile file("/home/redwan/Desktop/pidtune.txt");
     if (!file.exists())
     {
         gain[0]=100*KpX;gain[2]=100*KpY;gain[4]=100*KpZ;gain[6]=100*KpS;
         gain[1]=100*KdX;gain[3]=100*KdY;gain[5]=100*KdZ;gain[7]=100*KdS;
-
-         wrtieGain();
+        wrtieGain();
         sleep(1);
     }
 
@@ -455,14 +457,11 @@ void controller::updateGain(){
     kd<<gain[1]/100.00,0,0,0,0,gain[3]/100.00,0,0,0,0,gain[5]/100.00,0,0,0,0,gain[7]/100.00;
     debugger("pidtune gain update successfully");
 }
-
+//---------------------------------------GUI COMMUNICATION and DATA LOG------------------------------------------------------------
 void controller::debugger(std::string ss){
-
     debug_cntr.data=ss;
     debugger_cntrl.publish(debug_cntr);
     ROS_INFO_STREAM(ss);
-
-
 }
 
 void controller::dataWrite(){
@@ -471,90 +470,23 @@ void controller::dataWrite(){
 
                 if(file.isOpen()){
                       QTextStream outStream(&file);
-                      
+                      //time stamp
+                     outStream<< getMS()<<"\t";
+                     //robot position
                     for(int i=0;i<4;i++)
                            outStream<<X(i)<<"\t";
-
+                    //controller output
                       for(int i=0;i<4;i++)
                            outStream<<input.at(i)<<"\t";
-                       for(int i=0;i<4;i++)
-                           outStream<<velocity.at(i)<<"\t";
-                       for(int i=0;i<4;i++)
-                           outStream<<acceleration.at(i)<<"\t";
-                       outStream<< getMS()<<"\t";
-					   for(int i=0;i<4;i++)
-							outStream<< setpoint.at(i)<<"\t";
-						 outStream<<"\n";
+//                       for(int i=0;i<4;i++)
+//                           outStream<<velocity.at(i)<<"\t";
+//                       for(int i=0;i<4;i++)
+//                           outStream<<acceleration.at(i)<<"\t";
+
+//					   for(int i=0;i<4;i++)
+//							outStream<< setpoint.at(i)<<"\t";
+                         outStream<<"\n";
                 }
                 file.close();
 }
 
-void controller::circularMotion(const ros::TimerEvent& e){
-	if(!EnableCircle)return;
-	circleCount+=0.1;
-	float rad=1;
-	float xpos=rad*sin(2*3.1416*circleCount);
-	float ypos=rad*cos(2*3.1416*circleCount);
-    if(abs(xpos)<0.01)xpos=0;
-    if(abs(ypos)<0.01)ypos=0;
-    mutex.lock();
-	setpoint.clear();
-	setpoint.push_back(xpos);
-	setpoint.push_back(ypos);
-	setpoint.push_back(1.2);
-	setpoint.push_back(0);
-    mutex.unlock();
-	if(circleCount>=2)
-		EnableCircle=false;
-	ROS_INFO_STREAM("Setpoint "<<10*circleCount <<" Update "<< xpos <<"\t"<<ypos);
-	
-}
-
-void controller::test(){
-    count+=1;
-    ControlCommand c;
-    double u[4]={0,0,0,0};
-
-        double type=count/110.00;
- /*   switch(type){
-
-        case 1+0:u[0]=1;ROS_INFO("moveing +ve X"); break;
-        case 2+1:u[1]=1;ROS_INFO("moveing +ve Y");break;
-        case 3+2:u[2]=1;ROS_INFO("moveing +ve Z");break;
-
-        case 4+3:u[0]=-1;ROS_INFO("moveing -nve X");break;
-        case 5+4:u[1]=-1;ROS_INFO("moveing -nve Y");break;
-        case 6+5:u[2]=-1;ROS_INFO("moveing -nve Z");break;
-
-        case 7+6:u[3]=1;ROS_INFO("moveing -neg Yaw");
-        case 8+7:u[3]=1;ROS_INFO("moveing +ve Yaw"); break;
-
-        case 9+8:testingMode=false; ROS_INFO("Test Done");break;
-
-   } */
-   u[0]=sin(2*M_PI*type);
-   u[1]=cos(2*M_PI*type);
-   ROS_INFO_STREAM("x= "<<u[0]<<" y= "<<u[1]<<" time "<<type);
-   if(type>5){
-       u[0]=u[1]=0;
-        ROS_INFO("Test Done");
-   }
-   if(type>7)
-       testingMode=false;
-
-    c.gaz=u[2]*UNITSTEP;    //moving Z direction
-    c.pitch=u[1]*UNITSTEP; //moving Y direction
-    c.roll=u[0]*UNITSTEP;   //moving X direction
-    c.yaw=u[3]*UNITSTEP; //change Yaw
-    cmdPublish(c);
-    input.clear();
-    for(int i=0;i<4;i++)
-        input.push_back(u[i]*UNITSTEP);
-    if(testingMode)
-        dataWrite();
-
-}
-
-bool controller::controllerStatus(){
-   return controller_Status;
-}

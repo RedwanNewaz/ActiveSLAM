@@ -146,7 +146,7 @@ void display::pathShow(list<state> mypath){
 void display::obstacle_boundary(int* A){
      geometry_msgs::Pose pose;
      pose.position.z=robo_z;
-
+    return;
 
      orientation direction;
      for(int i=0;i<=1;i++){

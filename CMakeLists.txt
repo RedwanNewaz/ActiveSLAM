@@ -137,6 +137,27 @@ add_executable(planner ${PLANNER_HEADERS} ${PLANNER_SOURCES})
 target_link_libraries(planner ${PROJECT_LIB})
 
 
+# ---------------------------- HOTSPOT SEEKING --------------------------------------------------
+
+
+#path planner
+set(HEXSEARCH_HEADERS
+ hexTree/infotree.h
+ hexTree/display.h
+ hexTree/dpsolver.h
+hexTree/hotspot.h
+
+)
+set(HEXSEARCH_SOURCES
+ hexTree/infotree.cpp
+ hexTree/display.cpp
+ hexTree/dpsolver.cpp
+ hexTree/main.cpp
+hexTree/hotspot.cpp
+)
+# build!
+add_executable(seeking ${HEXSEARCH_HEADERS} ${HEXSEARCH_SOURCES})
+target_link_libraries(seeking ${PROJECT_LIB})
 
 
 # ---------------------------- GUI --------------------------------------------------

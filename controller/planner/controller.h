@@ -2,7 +2,7 @@
 #define CONTROLLER_H
 #include "active_slam/pidgain.h"
 #define degree 0.0174533
-#define UNITSTEP 0.15
+#define UNITSTEP 0.1
 #define FREQUENCY 30.00
 #define STOP 0.35
 #define MAX_VEL 2
@@ -18,6 +18,9 @@
 #include "geometry_msgs/PoseArray.h"
 
 #include "../header.h"
+
+
+
 
 //prediction model coefficient
 static const double c1=0.01;
@@ -48,15 +51,11 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     controller();
     // The main callback to calculate u
-    void obstacleChannel(double,double);
     void control(vector<double> msg);
     void stateUpdate(vector<double> msg);
-    bool controllerStatus();
-	void circularMotion(const ros::TimerEvent& e);
     void trajCallback(const geometry_msgs::PoseArrayConstPtr msg);
     void executingTraj();
     void debugger(std::string);
-    bool obs_state(int *);
     void readGain();
     struct tr{
         vector<double>x,y;
@@ -89,13 +88,16 @@ private:
 
 
     //debugger
-    ros::Publisher debugger_cntrl;
+    ros::Publisher debugger_cntrl,land_pub;
+    ros::Subscriber xbee;
 
     std_msgs::String debug_cntr;
 
     ros::ServiceClient obs_srv;
 
-
+    //XBEE READING
+    int obstacleStatus;
+    float lightSensor[3];
 
 
     enum target{
@@ -140,7 +142,6 @@ protected:
     void cmdQueuePub();
     void cmdPublish(ControlCommand);
     bool goalConverage();
-    void test();
     double prediction(int);
 //    QMutex mutex;
     void dataWrite();
@@ -148,6 +149,7 @@ protected:
     void wrtieGain();
     void motionType(int);
     void squarBox();
+    void HoveringMode();
 
     //PID parameters
     double i_term[3];
@@ -157,6 +159,7 @@ protected:
     //service
     bool gainchange(active_slam::pidgain::Request  &req,
              active_slam::pidgain::Response &res);
+    void xbeeRead(const geometry_msgs::QuaternionConstPtr);
 
 
 

@@ -73,7 +73,7 @@ double scale::FindScale(std::vector<double> cx, std::vector<double> cy){
 	}
     lamda=1/lamda;
     // ROS_INFO_STREAM("scale size "<< lamda);
-	return lamda;
+    return 5;
 }
 
 double scale::distance(double x, double y){

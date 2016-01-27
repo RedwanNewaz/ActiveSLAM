@@ -223,9 +223,6 @@
 
      if(result){
          VOSCALE=scaleEst->voScale();
-         controller cntr;
-         cntr.obstacleChannel(VOSCALE,est_altd);
-
          resetState();
          VOSTART =true;
          initialized_scale=false;

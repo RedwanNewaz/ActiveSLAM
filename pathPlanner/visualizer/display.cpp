@@ -2,7 +2,7 @@
 
 display::display()
 {
-    robot_pub = nh_.advertise<visualization_msgs::Marker>("Quad/state/map", 1);
+    robot_pub = nh_.advertise<visualization_msgs::Marker>("Quad/state/map", 1000);
     pcl_pub_plan=nh_.advertise<sensor_msgs::PointCloud2>("Quad/map/candidates",10);
     pcl_pub2=nh_.advertise<sensor_msgs::PointCloud2>("Quad/map",10);
 
@@ -32,10 +32,11 @@ display::display()
     plan.scale.y = 0.05;
     plan.scale.z = 0.05;
 
-    // track list is blue
+
+    //  path is pink
+    plan.color.b = 1.0;
     plan.color.r = 1.0;
     plan.color.a = 1.0;
-
 
     //configure track list
     track_list.pose.orientation.w = 1.0;
@@ -95,6 +96,9 @@ void display::mapPublisher(const boost::shared_ptr<const sensor_msgs::PointCloud
     pcl_msg.header.stamp  = ros::Time::now();
     pcl_pub2.publish(input);
 
+//    if(!plan.points.empty())
+//        robot_pub.publish(plan);
+
 
 
 }
@@ -109,6 +113,21 @@ void display::pathShow(list<state> mypath){
       p.z = 1;
       plan.points.push_back(p);
     }
-     robot_pub.publish(plan);
 
+
+}
+
+void display::pathViz(std::vector<double> x,std::vector<double> y){
+
+    plan.points.clear();
+    for (int i=0;i<x.size();i++){
+
+        geometry_msgs::Point p;
+        p.x = x.at(i);
+        p.y = y.at(i);
+        p.z = 1.2;
+
+        plan.points.push_back(p);
+    }
+    robot_pub.publish(plan);
 }

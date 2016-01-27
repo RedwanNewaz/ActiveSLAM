@@ -1,6 +1,7 @@
 #ifndef OCTOMAP_SEARCH_H
 #define OCTOMAP_SEARCH_H
 #include "../header.h"
+#include <algorithm>
 #include "Dstar.h"
 #include "octomap/AbstractOcTree.h"
 #include"octomap_msgs/conversions.h"
@@ -12,6 +13,7 @@
 #include "geometry_msgs/PoseArray.h"
 
 #define deg 0.0174532925
+#define angle_sep 30
 
 
 using namespace octomap;
@@ -24,7 +26,8 @@ public:
     void evaluateNode();
     void find_status();
     void updateRobot(float x, float y);
-    void check_position_colision(const geometry_msgs::PoseStamped pose);
+//    void check_position_colision(const geometry_msgs::PoseStamped pose);
+    void frontears();
     void getOctomap( octomap_msgs::Octomap::ConstPtr msg );
     void foundPath(vector<float>goal);
     void debugger(std::string ss);
@@ -33,6 +36,9 @@ public:
     double z_limiter;
     void obstacle_avoid(double*,double,double);
     bool octree_search(double x, double y);
+    void computeCost();
+    double cost_grid(std::vector<double>);
+
 
 private:
     //exploration
@@ -69,6 +75,8 @@ private:
     ros::Subscriber octomap_sub;
     ros::Publisher traj;
     display *viz;
+
+    std::vector<double>cost;
 
 
     //debugger

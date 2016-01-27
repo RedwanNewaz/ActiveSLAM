@@ -29,7 +29,7 @@ mav::~mav()
 void mav::run(){
         ROS_INFO("MOTION SUBSCRIBTION ENABLE");
         sleep(1);
-        Cntrl->debugger("controller started");
+        Cntrl->debugger("controller started vs 3.03");
         Cntrl->readGain();
 
 
@@ -51,9 +51,9 @@ void mav::run(){
 void mav::timerCallback(const ros::TimerEvent& e){
      mutex.lock();
           visualize->ukf_transformer(stateSpace->stateDisplay(FUSEDATA));
-          int obs[2];
-          if(Cntrl->obs_state(obs))
-              visualize->obstacle_boundary(obs);
+//          int obs[2];
+//          if(Cntrl->obs_state(obs))
+//              visualize->obstacle_boundary(obs);
      mutex.unlock();
 
 //     if(!controlPose) return;
