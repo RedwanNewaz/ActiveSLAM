@@ -47,6 +47,7 @@ public:
     std::vector<infoNode>logTree;
 
 
+
     int length();
     void addParent(float *);
     void treeToDPinput(float *value, float *weight);
@@ -56,12 +57,15 @@ public:
     void hamiltoPath(float child[7][2],float *result);
     int sequanceTOpath(int * , float *, float *);
     int sampleMeasurement(float mes_att[6],float cost_dist[6]);
+    int optimize_sample_path(float *X, float *Y);
+    void pathSequence(int * sequence);
 private:
     infoNode *root;
     int serialKey;
     display *visualize;
     float children[7][2],robot[2];
     std::vector<int>taken;
+    float localPath[6];
 
 protected:
     void addParentLocationPrivate(float *loc);

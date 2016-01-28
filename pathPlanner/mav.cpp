@@ -13,10 +13,6 @@ mav::mav()
     service = nh_.advertiseService("motionplan",&mav::talk,this);
     srv_obs = nh_.advertiseService("obstacle",&mav::collision,this);
     robot_srv=nh_.serviceClient<active_slam::obstacle>("localization");
-
-
-
-
 }
 
 mav::~mav()

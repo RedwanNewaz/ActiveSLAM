@@ -4,87 +4,79 @@ hotspot::hotspot()
 {
     step=0;
     tree=new infoTree;
+    robot_client=nh_.serviceClient<active_slam::obstacle>("localization");
+    traj= nh_.advertise<geometry_msgs::PoseArray>("traj", 10);
+    service = nh_.advertiseService("xbee/measurements",&hotspot::sensor_reading,this);
 }
+
+
+
 void hotspot::findHotspot(float robot[2],float goal[2]){
+
+
+    active_slam::obstacle robo;
+    if (robot_client.call(robo))
+    {
+        robot[0]=robo.response.x;
+        robot[1]=robo.response.y;
+        ROS_WARN("Robot position is updated");
+    }
+    else
+        ROS_ERROR("State Estimator is not active...");
+
 
     for(int i=0;i<2;i++){
         uav[i]=initialRobotPosition[i]=robot[i];
         target[i]=goal[i];
     }
-    enableSimulation=true;
-    while(enableSimulation){
-        simulation();
-        sleep(1);
+
+    //initialization
+    tree->addParent(uav);
+
+    tree->currentchildren(HexSamples);
+    sleep(1);
+    sampling_path_publish();
+
+    ros::Rate r(10);
+    while (ros::ok()){
+        ros::spinOnce();
+         r.sleep();
+
     }
 
-    // find optimal path
+//    //simulation
+//    simulation();
 
-    // tree length
-    int item=tree->length();
-    float value[item], weight[item];
 
-    tree->treeToDPinput(value,weight);
-    // populate value and item
-    int solutionIndex[item];
 
-    int key=100000;
-    for(int pathLength=50;pathLength<168;pathLength+=15){
-    dp=new dpsolver;
-    dp->input(item,weight,value,pathLength,solutionIndex );
+//    // find optimal path
+//    optimal_path_publish();
 
-    //find optimal sequence
-    int cur=0;
-    for (int j=0;j<item;j++)
-        cur+=solutionIndex[j]*(j+1);
-    if(cur==key)
-        break;
-    else
-        key=cur;
-    }
-
-//    convert sequence to path
-    float pathx[item],pathy[item];
-    tree->sequanceTOpath(solutionIndex,pathx,pathy);
 }
 
 void hotspot::simulation()
 {
 
-    // determine hexagonal sample locations
-    tree->addParent(uav);
-    float childern[7][2];
-    tree->currentchildren(childern);
-    MatrixXf nei(6,2),subgoal(6,2),iniPos(6,2);
-    for (int i=0;i<6;i++)
-        for (int j=0;j<2;j++){
-            nei(i,j)=childern[i][j];
-            subgoal(i,j)=target[j];
-            iniPos(i,j)=initialRobotPosition[j];
-        }
+        // compute cost and info
+      MatrixXf nei(6,2),subgoal(6,2);
+      VectorXf MeasurementAttribute(6);
 
-    // compute cost and info
-    VectorXf BaseCost(6),MeasurementAttribute(6);
-    BaseCost=distance( iniPos , nei);
-    MeasurementAttribute=distance(subgoal,nei);
+      nei=array2Mat(HexSamples);
+      subgoal=repeatMat(target);
+      MeasurementAttribute=distance(subgoal,nei);
+      updateMeasurement(MeasurementAttribute.data());
 
-    //    update Tree and next sample location
-    int local_best=tree->sampleMeasurement(MeasurementAttribute.data(),BaseCost.data());
-    updateParentLocation(uav,local_best);
-
-    // termination condition
+     // termination condition
     float near=sqrt(pow(target[0]-uav[0],2)+pow(target[1]-uav[1],2));
-    if (near<1)
-        enableSimulation=0;
-    else
-        ROS_INFO_STREAM("step:= "<<step<< " distance:= "<<near);
+     ROS_INFO_STREAM("step:= "<<step<< " distance:= "<<near);
+     step++;
 
-    step++;
-
+     sleep(1);
+     if(near>1)simulation();
 
 }
 
 void hotspot::updateParentLocation(float *robot,int candidate){
-
     float xx[4],yy[4];
     switch(candidate){
     case 0: readChildren(xx,yy,5,0,1,2) ;break;
@@ -94,9 +86,6 @@ void hotspot::updateParentLocation(float *robot,int candidate){
     case 4: readChildren(xx,yy,3,4,5,0) ;break;
     case 5: readChildren(xx,yy,4,5,1,0) ;break;
     }
-
-//    for(int i=0;i<4;i++)
-//        ROS_INFO("xx(%f) yy(%f)",xx[i],yy[i]);
     lineIntesection(robot,xx,yy);
 
 }
@@ -146,4 +135,141 @@ Matrix<float,Dynamic,1> hotspot::distance(MatrixXf A,MatrixXf B,int size){
                 D_pow(i,j)=pow(D(i,j),2);
          return D_pow.rowwise().sum();
 
+}
+
+//-------------------------TODay
+
+MatrixXf hotspot::repeatMat(float *array){
+    MatrixXf mat(6,2);
+     for (int i=0;i<6;i++)
+       for (int j=0;j<2;j++)
+            mat(i,j)=array[j];
+
+     return mat;
+
+
+}
+
+MatrixXf hotspot:: array2Mat(float array[7][2]){
+    MatrixXf mat(6,2);
+    for (int i=0;i<6;i++)
+      for (int j=0;j<2;j++)
+          mat(i,j)=array[i][j];
+    return mat;
+
+}
+
+void hotspot::updateMeasurement(float attribute[6])
+{
+
+    MatrixXf nei(6,2),iniPos(6,2);
+    iniPos=repeatMat(initialRobotPosition);
+    nei=array2Mat(HexSamples);
+
+    VectorXf BaseCost(6);
+    BaseCost=distance( iniPos , nei);
+
+    //    update Tree and next sample location
+    int local_best=tree->sampleMeasurement(attribute,BaseCost.data());
+    updateParentLocation(uav,local_best);
+    tree->addParent(uav);
+    tree->currentchildren(HexSamples);
+    ROS_INFO("updated uav (%f, %f)",uav[0],uav[1]);
+    sampling_path_publish();
+
+
+
+}
+
+void hotspot::sampling_path_publish(){
+
+    float X[6],Y[6];
+    int pathLength=tree->optimize_sample_path(X, Y);
+    geometry_msgs::PoseArray trajArray;
+
+    for (int i=0;i<pathLength;i++)
+    {
+      geometry_msgs::Pose pose;
+      pose.position.x=X[i];
+      pose.position.y=Y[i];
+      trajArray.poses.push_back(pose);
+    }
+      traj.publish(trajArray);
+
+
+ }
+
+void hotspot::optimal_path_publish(){
+
+    // tree length
+    int item=tree->length();
+    float value[item], weight[item];
+
+    tree->treeToDPinput(value,weight);
+    // populate value and item
+    int solutionIndex[item];
+
+    int key=100000;
+    for(int pathLength=50;pathLength<168;pathLength+=15){
+        dp=new dpsolver;
+        dp->input(item,weight,value,pathLength,solutionIndex );
+
+        //find optimal sequence
+        int cur=0;
+        for (int j=0;j<item;j++)
+            cur+=solutionIndex[j]*(j+1);
+        if(cur==key)
+            break;
+        key=cur;
+    }
+
+//    convert sequence to path
+    float pathx[item],pathy[item];
+    int path_length=tree->sequanceTOpath(solutionIndex,pathx,pathy);
+
+    //publish path
+    geometry_msgs::PoseArray trajArray;
+
+    for(int i=0;i<path_length;i++)
+    {
+     geometry_msgs::Pose pose;
+     pose.position.x=pathx[i];
+     pose.position.y=pathy[i];
+     trajArray.poses.push_back(pose);
+    }
+     traj.publish(trajArray);
+
+
+ }
+
+void hotspot::pathSeqToMes(float reading[6],int n){
+    float hex_mes[6];int sequence[6];
+    for(int i=0;i<6;i++)
+        hex_mes[i]=1000;
+    tree->pathSequence(sequence);
+    for(int j=0;j<n;j++){
+        if(sequence[j]==-1){
+         ROS_ERROR("measurement update error");
+         continue;
+        }
+
+        hex_mes[sequence[j] ]=reading[j];
+    }
+    updateMeasurement(hex_mes);
+
+
+}
+
+bool hotspot::sensor_reading(active_slam::sensor::Request  &req,
+         active_slam::sensor::Response &res)
+{
+    float mes[6];
+    for(int i=0;i<req.count;i++)
+    {
+        ROS_INFO_STREAM("measurements for path "<<req.reading[i]);
+        mes[i]=req.reading[i];
+    }
+    pathSeqToMes(mes,req.count);
+    res.result=true;
+    return true;
 }

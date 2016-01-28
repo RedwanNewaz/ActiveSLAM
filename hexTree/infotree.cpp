@@ -50,7 +50,7 @@ void infoTree::addChildrenPrivate(float *center){
        root->children[count]->location[1]= children[count][1]=center[1]+R*cos(theta*deg);
        count++;
     }
-    float localPath[6];
+
     hamiltoPath(children,localPath);
     optimizeHamiltonPath(localPath,robot,children);
     visualize->hexSample(children,localPath);
@@ -168,7 +168,7 @@ int infoTree::sequanceTOpath(int * sequance, float *X, float *Y){
     Y[count]=nd.parent->location[1];
 
     visualize->optimalPath(X,Y,count+1);
-    return count;
+    return count+1;
 }
 
 void infoTree::optimizeHamiltonPath(float *pathIndex, float *robo, float nei[7][2] ){
@@ -216,4 +216,22 @@ void infoTree::optimizeHamiltonPath(float *pathIndex, float *robo, float nei[7][
       }
 }
 
+int infoTree::optimize_sample_path(float *X, float *Y){
+    int count=0;
+    for (int i=0;i<6;i++)
+     {
+        if(localPath[i]==-1)continue;
+        int index=localPath[i];
+       X[count] = children[index ][0];
+       Y[count] = children[index][1];
+       count++;
 
+     }
+    return count;
+}
+
+void infoTree::pathSequence(int * sequence){
+    for (int i=0;i<6;i++)
+        sequence[i]=int(localPath[i]);
+
+}

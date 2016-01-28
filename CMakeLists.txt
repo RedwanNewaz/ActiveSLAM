@@ -34,6 +34,7 @@ add_service_files(
   pidgain.srv
   plannertalk.srv
   obstacle.srv
+  sensor.srv
 )
 
 ## Generate added messages

@@ -14,6 +14,7 @@
 #include "active_slam/obstacle.h"
 #include "geometry_msgs/Quaternion.h"
 #include "std_msgs/Empty.h"
+#include "active_slam/sensor.h"
 
 
 
@@ -26,7 +27,7 @@ controller::controller()
     vel_pub	   = nh.advertise<geometry_msgs::Twist>(nh.resolveName("cmd_vel"),1);
     debugger_cntrl=nh.advertise<std_msgs::String>("jaistquad/debug",1);
     service = nh.advertiseService("pid_gains",&controller::gainchange,this);
-    obs_srv=nh.serviceClient<active_slam::obstacle>("obstacle");
+    obs_srv=nh.serviceClient<active_slam::sensor>("xbee/measurements");
     xbee	   = nh.subscribe("xbeeReading",50, &controller::xbeeRead, this);
     land_pub	   = nh.advertise<std_msgs::Empty>(nh.resolveName("ardrone/land"),1);
 
@@ -129,6 +130,18 @@ void controller::squarBox(){
 
 void controller::trajCallback(const geometry_msgs::PoseArrayConstPtr msg){
 //     //reseting store trajectory
+
+    active_slam::sensor lightIntensity;
+    for(int i=0;i<3;i++)
+    lightIntensity.request.reading[i]=i+1;
+    lightIntensity.request.count=3;
+    if(obs_srv.call(lightIntensity))
+        ROS_WARN("Data send");
+    //simulation
+    sleep(1);
+
+    return;
+
 
 //     //updating new trajectory
      plan=true;
