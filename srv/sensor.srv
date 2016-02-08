@@ -1,0 +1,5 @@
+int32 count
+float32[6] reading
+---
+bool result
+

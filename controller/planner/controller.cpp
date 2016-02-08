@@ -17,8 +17,6 @@
 #include "active_slam/sensor.h"
 
 
-
-
 controller::controller()
 {
     controller_Status=IDLE;
@@ -27,12 +25,28 @@ controller::controller()
     vel_pub	   = nh.advertise<geometry_msgs::Twist>(nh.resolveName("cmd_vel"),1);
     debugger_cntrl=nh.advertise<std_msgs::String>("jaistquad/debug",1);
     service = nh.advertiseService("pid_gains",&controller::gainchange,this);
+    attribute = nh.advertiseService("measurement",&controller::measurements_attribute,this);
+    threshold = nh.advertiseService("threshold",&controller::measurements_threshold,this);
+
     obs_srv=nh.serviceClient<active_slam::sensor>("xbee/measurements");
     xbee	   = nh.subscribe("xbeeReading",50, &controller::xbeeRead, this);
     land_pub	   = nh.advertise<std_msgs::Empty>(nh.resolveName("ardrone/land"),1);
 
+    path.index=path.length=path.Obstacle=0;
+    for (int i=0;i<3;i++)
+        lightSensor[i]=0;
 
+    //datalogger
+    log=new datalogger;
+    log->fileName("contoller_log");
+    string a[3]={"global_index","path_index", "uncertainty"};
+    log->addHeader(a,3);
+    global_index= error=0;;
 
+    cntrl_per=new datalogger;
+    cntrl_per->fileName("contoller_performance_log");
+    string b[9]={"xErr","yErr", "zErr","oErr","inX","inY","inZ","inO","MS"};
+    cntrl_per->addHeader(b,9);
 
 
 
@@ -57,19 +71,23 @@ controller::controller()
 
     }
 
-    fileName="/home/redwan/Desktop/data/stepRespone.txt";
-    QString original="/home/redwan/Desktop/data/stepResponse_";
-    for(int i=1;QFile(fileName).exists();i++){
-        fileName=original+QString::number(i)+".txt";
-    }
-    qDebug()<<fileName;
+
 }
 
 
 void controller::xbeeRead(const geometry_msgs::QuaternionConstPtr msg){
-    lightSensor[0]=msg->x;
-    lightSensor[1]=msg->y;
-    lightSensor[2]=msg->z;
+   if(lightSensor[0]==0)
+   {
+       lightSensor[0]=msg->x;
+       lightSensor[1]=msg->y;
+       lightSensor[2]=msg->z;
+   }
+   else
+   {
+    lightSensor[0]=0.5*lightSensor[0]+0.5*msg->x;
+    lightSensor[1]=0.5*lightSensor[1]+0.5*msg->y;
+    lightSensor[2]=0.5*lightSensor[2]+0.5*msg->z;
+   }
     obstacleStatus=msg->w;
 }
 
@@ -91,6 +109,7 @@ bool controller::gainchange(active_slam::pidgain::Request  &req,
     updateGain();
     return true;
 }
+
 
 void controller::motionType(int i){
     EnableTraj=EnableP2P=testingMode=EnableCircle=false;
@@ -122,62 +141,108 @@ void controller::squarBox(){
                 traj.x.push_back(0);
                 traj.y.push_back(0);
 
-                mutex.lock();
+
                    controller_Status=RECEVIED;
                    executingTraj();
-               mutex.unlock();
+
 }
+
+/*
+ * 1) get trajecotry for HexTree
+ * 2) get threshold value from GUI
+ * 3) update measurement from xbee
+ * 4) if obstacle detected send garbage value to the path
+ */
+
+
 
 void controller::trajCallback(const geometry_msgs::PoseArrayConstPtr msg){
 //     //reseting store trajectory
 
-    active_slam::sensor lightIntensity;
-    for(int i=0;i<3;i++)
-    lightIntensity.request.reading[i]=i+1;
-    lightIntensity.request.count=3;
-    if(obs_srv.call(lightIntensity))
-        ROS_WARN("Data send");
-    //simulation
-    sleep(1);
+        path.index=path.length=path.Obstacle=0;
 
-    return;
-
-
-//     //updating new trajectory
      plan=true;
      traj.x.clear();traj.y.clear();traj.index=0;
     foreach (geometry_msgs::Pose pose,msg->poses){
       ROS_INFO("traj received (%lf, %lf) ", pose.position.x ,pose.position.y);
       traj.x.push_back(pose.position.x);
       traj.y.push_back(pose.position.y);
+      path.length++;// compute total path length
 
     }
 
    std::stringstream debug_cntrle;
-   if(EnableP2P){
-        foreach (geometry_msgs::Pose pose,msg->poses)
-        debug_cntrle<<"approaching to ("<< pose.position.x<<", "<< pose.position.y<<")";
-        debugger(debug_cntrle.str());
-        controller_Status=RECEVIED;
-        executingTraj();
-   }
-   else if(EnableTraj){
-//
-    mutex.lock();
-       controller_Status=RECEVIED;
-       executingTraj();
-       debug_cntrle<<traj.x.size();
-       debugger("new traj received "+debug_cntrle.str());
-    mutex.unlock();
-   }
+
+      controller_Status=RECEVIED;
+      if(path.length>1)
+      debug_cntrle<<path.length;
+      debugger("new traj received "+debug_cntrle.str());
+      sleep(1);
+      executingTraj();
+
+
+}
+
+void controller::updateMeasurement(bool fake){
+    float sum=0;
+    for(int i=0;i<3;i++)
+        sum+=lightSensor[i];
+    if(fake)
+        path.intensity[path.index]=GARBAGE_MES;
+    else
+        path.intensity[path.index]=sum/3;
+            path.index++;
+            if(path.index==path.length)
+                SendMeasurementPacket();
+
+}
+
+//exploration termination condition here
+void controller::SendMeasurementPacket(){
+
+    active_slam::sensor lightIntensity;
+    for(int i=0;i<path.length;i++){
+        lightIntensity.request.reading[i]=path.intensity[i];
+        //--------------------------------------------------------
+            //ckeck with threhold limit(less than) if not send default value
+//        if(path.intensity[i]!=GARBAGE_MES && path.intensity[i]<=path.threshold){
+//            lightIntensity.request.count=1;
+//            break;
+//        }
+//        else
+//            lightIntensity.request.count=0;
+    //--------------------------------------------------------
+        float goal[2]={0,7},power=0;
+        for (int i=0;i<2;i++)
+            power+=pow(X(i)-goal[i],2);
+        if(sqrt(power)<1)
+            lightIntensity.request.count=1;
+        else
+            lightIntensity.request.count=0;
+    }
+
+
+
+    if(obs_srv.call(lightIntensity))
+        ROS_WARN("Data send");
+    //wait a bit
+    sleep(1);
 
 
 }
 
 
+
 void controller::executingTraj(){
 
+            if(traj.index>path.length-1)
+            {
+                debugger("Target achieved");
+                controller_Status=IDLE;
+                sleep(1);
+                return;
 
+            }
              ROS_INFO_STREAM(" remain traj length "<< traj.x.size()-traj.index);
              vector<double> traj_msg;
              traj_msg.push_back(traj.x.at(traj.index));
@@ -190,7 +255,7 @@ void controller::executingTraj(){
              std::stringstream debug_cntrle;
              debug_cntrle<<"approaching to "<<traj.index<< ": ("<< traj.x.at(traj.index)<<", "<< traj.y.at(traj.index)<<")";
              debugger(debug_cntrle.str());
-             controller_Status=EXECUTING;
+             sleep(1);
              control(traj_msg);
 
 
@@ -200,23 +265,13 @@ void controller::control(vector<double> dmsg){
 
 
     setpoint.clear();
-
-    for (int i=0;i<4;i++){
-        if(!EnableCircle)
+    for (int i=0;i<4;i++)
         setpoint.push_back(dmsg.at(i));
-    else
-         setpoint.push_back(0);
 
-    }
+    controller_Status=EXECUTING;
 
-    if((controller_Status==IDLE||controller_Status==SUCCESS) && !testingMode ){
-        //controller_Status=EXECUTING;
-        ROS_INFO_STREAM(dmsg.at(0)<< "\t" <<dmsg.at(1)<< "\t"  <<dmsg.at(2)<< "\t" <<dmsg.at(3));
-    }
-    else if(testingMode)
-     ROS_WARN("Testing motion");
-    else
-     ROS_WARN("Controller busy");
+
+
 
 }
 
@@ -245,11 +300,36 @@ void controller::HoveringMode(){
 
 void controller::run(const ros::TimerEvent& e){
 
-    if(!state_update && !compute_X_error())
-    {HoveringMode();
-        return;}
-    if(controller_Status==IDLE || controller_Status!=EXECUTING ||testingMode)return;
-    Eigen::Vector4d u_cmd= Ar_drone_input();
+    if((!state_update && !compute_X_error())||
+            controller_Status==IDLE ||
+            controller_Status!=EXECUTING)
+    {
+        HoveringMode();
+        return;
+    }
+
+    if(resetController>30){
+        global_index++;
+        float a[3]={global_index,traj.index,error};
+        log->dataWrite(a,3);
+        traj.index++;
+        resetController=0;
+        executingTraj();
+        return;
+    }
+Eigen::Vector4d u_cmd;
+mutex.lock();
+        u_cmd = Ar_drone_input();
+
+mutex.unlock();
+
+
+    // IF ROBOT FINDS THE DESTINATION OR OBSTACLE DETECTED
+
+
+
+
+
     ControlCommand c;
     c.roll=u_cmd(0);   //moving X direction
     c.pitch=u_cmd(1); //moving Y direction
@@ -262,10 +342,10 @@ void controller::run(const ros::TimerEvent& e){
 
  void controller::stateUpdate(vector<double> tmsg){
      //x y z Yaw dt
-
+mutex.lock();
      if(tmsg.size()<14)debugger("controller Error in state update");
 //    ROS_INFO_STREAM("state size "<<tmsg.size());
-    mutex.lock();
+
         for(int i=0;i<4;i++)
             X(i) = tmsg.at(i);
     //   Add velocity;
@@ -283,9 +363,9 @@ void controller::run(const ros::TimerEvent& e){
         ori.roll=tmsg.at(12);
         ori.pitch=tmsg.at(13);
         ori.yaw=tmsg.at(3);
-    state_update=true;
-    mutex.unlock();
+        state_update=true;
 
+mutex.unlock();
 
  }
 
@@ -309,6 +389,8 @@ void controller::run(const ros::TimerEvent& e){
 
 
  Eigen::Vector4d controller::Ar_drone_input(){
+
+
     //UPDATE CMD BASED ON PD GAIN
     Eigen::Vector4d cmd=kp*X_error+kd*X_dot_error;
 
@@ -325,32 +407,32 @@ void controller::run(const ros::TimerEvent& e){
     if (abs(X_error(3))<max_yaw)
         cmd(3)=0;
     else
-         cmd(3)=X_error(3)/abs(X_error(3));
+         cmd(3)=X_error(3)/abs(X_error(3))*UNITSTEP;
 
-    // IF ROBOT FINDS THE DESTINATION OR OBSTACLE DETECTED
-    if( goalConverage()||obstacleStatus)
-        for(int i=0;i<4;i++)
-            cmd(i)=0;
+        // MAKE ALT CONTROLLER SLAGGISH
+    cmd(2)*=UNITSTEP;
 
-    //AVOID OBSTACLES
-    /*
-            c.roll=u_cmd(0);   //moving X direction
-            c.pitch=u_cmd(1); //moving Y direction
-            c.gaz=u_cmd(2);    //moving Z direction
-            c.yaw=u_cmd(3); //change Yaw
-     */
+//    GOAL CONVERGE
+        if( goalConverage()||obstacleStatus)
+            for(int i=0;i<4;i++)
+                cmd(i)=0;
+
+//    //AVOID OBSTACLES
+
     switch(obstacleStatus){
-        case 2: cmd(0)=UNITSTEP;break; //   LEFT IS OCCUPIED ROLL RIGHT
-        case 3: cmd(0)=-UNITSTEP;break; //   RIGHT IS OCCUPIED ROLL LEFT
-        case 5: land_pub.publish(std_msgs::Empty());break; //   LAND
+        case 2: path.Obstacle=1; cmd(0)=UNITSTEP;break; //   LEFT IS OCCUPIED ROLL RIGHT
+        case 3: path.Obstacle=1; cmd(0)=-UNITSTEP;break; //   RIGHT IS OCCUPIED ROLL LEFT
+        case 5: path.Obstacle=1; land_pub.publish(std_msgs::Empty());break; //   LAND
 
     }
 
 
     // RECORD STATE & CMD TO A TXT FILE
-    input.clear();
+    if(!input.empty()) input.clear();
     for(int i=0;i<4;i++)
         input.push_back(cmd(i));
+
+
     dataWrite();
 
     return cmd;
@@ -376,32 +458,27 @@ void controller::run(const ros::TimerEvent& e){
   }
 
  bool controller::goalConverage(){
-    double error=0;
+    error=0;
     for (int i=0;i<2;i++)
         error+=pow(setpoint.at(i)-X(i),2);
+
+    //Avoid obstacle
+//    if(path.Obstacle && !obstacleStatus){
+//        path.Obstacle =0;
+//        traj.index++;
+//        updateMeasurement(1);//update garbage measurement
+//        executingTraj();
+//         return true;
+//    }
+
         //check goal radius
-    if(sqrt(error)<STOP){
-
-         ROS_INFO_STREAM("Target "<< sqrt(error) <<" Achieved "<< resetController);
+    if(sqrt(error)<STOP)
+    {
+//        updateMeasurement();
+        ROS_INFO_STREAM("Target "<< sqrt(error) <<" Achieved "<< resetController);
         resetController+=1;
-        if(resetController%5==0){
-          //  debugger("goal converged");
-
-        }
-        if(resetController>30){
-            controller_Status==SUCCESS;
-            traj.index+=1;
-            resetController=0;
-            if(traj.index<traj.x.size())
-                executingTraj();
-           // debugger("goal converged");
-        }
-
-        return true;}
-        //check unstable vehicle
-    else if(abs(velocity.at(0)>MAX_VEL)||abs(velocity.at(1)>MAX_VEL)){
-        ROS_INFO_STREAM("stablizing system ");
-        return true;}
+        return true;
+    }
     else
         return false;
 }
@@ -414,10 +491,8 @@ void controller::run(const ros::TimerEvent& e){
     cmdT.linear.z = cmd.gaz;
     cmdT.linear.x = cmd.pitch;
     cmdT.linear.y = -cmd.roll;
-
-    mutex.lock();
     vel_pub.publish(cmdT);
-    mutex.unlock();
+
 
 }
 
@@ -478,28 +553,39 @@ void controller::debugger(std::string ss){
 }
 
 void controller::dataWrite(){
-    QFile file(fileName);
-                file.open(QIODevice::Append | QIODevice::Text);
+    if(input.empty()){
+        ROS_ERROR("Controller input is empty");
+        return; }
+    float data[9];
+    for(int i=0;i<4;i++){
+        data[i]=X_error(i);
+        data[4+i]=input.at(i);
+    }
+    data[8]=getMS();
 
-                if(file.isOpen()){
-                      QTextStream outStream(&file);
-                      //time stamp
-                     outStream<< getMS()<<"\t";
-                     //robot position
-                    for(int i=0;i<4;i++)
-                           outStream<<X(i)<<"\t";
-                    //controller output
-                      for(int i=0;i<4;i++)
-                           outStream<<input.at(i)<<"\t";
-//                       for(int i=0;i<4;i++)
-//                           outStream<<velocity.at(i)<<"\t";
-//                       for(int i=0;i<4;i++)
-//                           outStream<<acceleration.at(i)<<"\t";
+    cntrl_per->dataWrite(data,9);
+    input.clear();
 
-//					   for(int i=0;i<4;i++)
-//							outStream<< setpoint.at(i)<<"\t";
-                         outStream<<"\n";
-                }
-                file.close();
 }
 
+//----------------services
+
+bool controller::measurements_attribute(active_slam::measurement::Request  &req,
+                                   active_slam::measurement::Response &res)
+{
+    float mes=0;
+    for (int i=0;i<3;i++)
+        mes+=lightSensor[i];
+    res.result=mes/3;
+    return true;
+}
+
+bool controller::measurements_threshold(active_slam::measurement::Request  &req,
+                                   active_slam::measurement::Response &res)
+{
+    path.threshold=req.state;
+    std::stringstream ss;
+    ss<<"threshold update "<<req.state;
+    debugger(ss.str());
+    sleep(1);
+}

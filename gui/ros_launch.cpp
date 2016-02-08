@@ -27,6 +27,7 @@ void ros_launch::run()
     image_sub=nh_.subscribe(image_topic, 1, &ros_launch::callback_Image,sensor_subs);
     navdata_sub	   = nh_.subscribe(nh_.resolveName("ardrone/navdata"),50, &ros_launch::navdataCb, sensor_subs);
     debugger_sub=nh_.subscribe("jaistquad/debug", 1, &ros_launch::debugger_callback,sensor_subs);
+    measurement_client=nh_.serviceClient<active_slam::measurement>("measurement");
 
     connect(sensor_subs,SIGNAL(singal_sensor_sub(QImage)),this,SLOT(slot_ros_launch(QImage)));
     connect(sensor_subs,SIGNAL(nav_battery(double)),this,SLOT(slot_nav_battery(double)));
@@ -65,10 +66,6 @@ void ros_launch::navdataCb(const ardrone_autonomy::NavdataConstPtr navdataPtr)
 
     if(navdataCount%20==0){
           emit nav_battery(navdataPtr->batteryPercent);
-//          std_msgs::String s0;
-//          s0.data="rosbot \t 12.04 \t 15.36 \t 2.00 ";
-//           debugger_pub.publish(s0);
-
     }
 
 
@@ -90,6 +87,15 @@ void ros_launch::debugger_callback(const std_msgs::StringConstPtr msg){
 void ros_launch::slot_nav_battery(double msg)
 {
     emit ardrone_battery(msg);
+    //send light intenisty information too
+    active_slam::measurement attribute;
+    double backgroundMeasurement=0;
+    attribute.request.state=1;
+    if(measurement_client.call(attribute))
+        backgroundMeasurement=attribute.response.result;
+    emit light_intensity(backgroundMeasurement);
+
+
 }
 
 void ros_launch::slot_ros_launch(const QImage &_img)

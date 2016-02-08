@@ -26,6 +26,7 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "nav_msgs/MapMetaData.h"
 #include <octomap_msgs/conversions.h>
+#include "active_slam/measurement.h"
 
 
 
@@ -51,6 +52,7 @@ signals:
      void nav_battery(double);
      void sig_debugger(QString);
      void sig_main_debugger(QString);
+     void light_intensity(double);
 
 
     
@@ -65,6 +67,7 @@ private:
      ros::Subscriber navdata_sub;
      ros::Subscriber debugger_sub;
      ros::Publisher debugger_pub;
+     ros::ServiceClient measurement_client;
 
      unsigned int navdataCount;
      QMutex mutex;

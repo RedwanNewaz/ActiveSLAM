@@ -25,8 +25,11 @@ int main(int argc, char *argv[])
 
     //RVIZ DEPENDECIES
     rviz_goal=nh_.subscribe("move_base_simple/goal",10,goalCallback);
+     hotspot HP;
+     HP.debugger("HOTSPOT SEEKER VS 1.00");
+     sleep(1);
 
-    ros::MultiThreadedSpinner spinner(2);
+    ros::MultiThreadedSpinner spinner(6);
     spinner.spin();
 
     return 0;

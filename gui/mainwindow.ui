@@ -53,7 +53,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>test</string>
+        <string>setThreshold</string>
        </property>
       </widget>
      </widget>
@@ -240,6 +240,64 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_calibration">
+        <property name="text">
+         <string>calibration</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Threshold Value</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="threshold_box">
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>3</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>4</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>5</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>6</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Light Intensity</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLCDNumber" name="intensity"/>
       </item>
       <item>
        <widget class="QLabel" name="label">

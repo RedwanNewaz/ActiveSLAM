@@ -4,8 +4,9 @@
 #define degree 0.0174533
 #define UNITSTEP 0.1
 #define FREQUENCY 30.00
-#define STOP 0.35
+#define STOP 0.2
 #define MAX_VEL 2
+#define GARBAGE_MES 1000
 // #define red 10.00
 
 #define  MAX_U 1
@@ -16,8 +17,10 @@
 #include <QString>
 #include <QMutex>
 #include "geometry_msgs/PoseArray.h"
+#include "active_slam/measurement.h"
 
 #include "../header.h"
+#include "../../hexTree/datalogger.h"
 
 
 
@@ -43,7 +46,7 @@ static const double KpZ=0.6;
 static const double KpS=0.05;
     static const double KdS=0.0;
 
-
+class datalogger;
 using namespace Eigen;
 class controller
 {
@@ -68,10 +71,11 @@ private:
     ros::Timer timer;
     ros::NodeHandle nh;
     ros::Publisher vel_pub;
-    ros::ServiceServer service;
+    ros::ServiceServer service,attribute,threshold;
     bool testingMode;
     int count;
     int resetController;
+    double error;
 
     //QT
     QString fileName;
@@ -134,7 +138,16 @@ private:
             bool inputApply;
             double gain[8];
 
+// Source seeking variable
+            struct seek{
+                int length,index;
+                float intensity[6], threshold;
+                bool Obstacle;
+            }path;
 
+//datalogger
+            datalogger *log,*cntrl_per;
+            int global_index;
 
 protected:
 
@@ -151,6 +164,9 @@ protected:
     void squarBox();
     void HoveringMode();
 
+    void SendMeasurementPacket();
+    void updateMeasurement(bool fake=false);
+
     //PID parameters
     double i_term[3];
 
@@ -159,6 +175,10 @@ protected:
     //service
     bool gainchange(active_slam::pidgain::Request  &req,
              active_slam::pidgain::Response &res);
+    bool measurements_attribute(active_slam::measurement::Request  &req,
+                                active_slam::measurement::Response &res);
+    bool measurements_threshold(active_slam::measurement::Request  &req,
+                                active_slam::measurement::Response &res);
     void xbeeRead(const geometry_msgs::QuaternionConstPtr);
 
 

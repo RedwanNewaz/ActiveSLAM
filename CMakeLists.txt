@@ -35,6 +35,7 @@ add_service_files(
   plannertalk.srv
   obstacle.srv
   sensor.srv
+  measurement.srv
 )
 
 ## Generate added messages
@@ -92,6 +93,7 @@ set(CONTROLLER_HEADERS
   controller/mav.h      
   controller/header.h
   controller/planner/actuator.h
+  hexTree/datalogger.h
 
 
 )
@@ -104,6 +106,7 @@ set(CONTROLLER_SOURCES
   controller/main.cpp
   controller/mav.cpp
   controller/planner/actuator.cpp
+  hexTree/datalogger.cpp
 
 )
 
@@ -146,7 +149,9 @@ set(HEXSEARCH_HEADERS
  hexTree/infotree.h
  hexTree/display.h
  hexTree/dpsolver.h
-hexTree/hotspot.h
+ hexTree/hotspot.h
+ hexTree/coverage.h
+ hexTree/datalogger.h
 
 )
 set(HEXSEARCH_SOURCES
@@ -154,7 +159,9 @@ set(HEXSEARCH_SOURCES
  hexTree/display.cpp
  hexTree/dpsolver.cpp
  hexTree/main.cpp
-hexTree/hotspot.cpp
+ hexTree/hotspot.cpp
+ hexTree/coverage.cpp
+ hexTree/datalogger.cpp
 )
 # build!
 add_executable(seeking ${HEXSEARCH_HEADERS} ${HEXSEARCH_SOURCES})

@@ -63,7 +63,7 @@ void display::hexSample(float SamplePoits[7][2], float localPathIndex[6]){
     SamplePoits[6][0]=SamplePoits[0][0];
     SamplePoits[6][1]=SamplePoits[0][1];
 
-    ROS_INFO_STREAM("planID "<< plan.id<< "hexID "<<hexID);
+//    ROS_INFO_STREAM("planID "<< plan.id<< "hexID "<<hexID);
    for (int i=0;i<7;i++)
     {
       geometry_msgs::Point p;

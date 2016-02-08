@@ -5,9 +5,11 @@
 #include <Eigen/Dense>
 #include "display.h"
 #include <iostream>
+#include "datalogger.h"
+
 #define deg 0.0174533
-#define AREASIZE 56
-#define SAMPLESIZE 1
+#define AREASIZE 500
+#define SAMPLESIZE 0.5
 
 
  template <class ForwardIterator>
@@ -66,6 +68,7 @@ private:
     float children[7][2],robot[2];
     std::vector<int>taken;
     float localPath[6];
+    datalogger *datalog;
 
 protected:
     void addParentLocationPrivate(float *loc);

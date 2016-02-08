@@ -1,3 +1,11 @@
+/*SCALE estimation problems
+ * VO and IMU has different scale
+ * we need to calibrate each of them
+ * From the 1meter real world distance
+ * TODO make a gui button for calibration
+ */
+
+
 #include "stateestimation.h"
 #include "../header.h"
 #include <QFile>
@@ -11,15 +19,18 @@
     batteryStatus=0;
     VOSTART =false;
     timer = nh.createTimer(ros::Duration(0.03), &stateEstimation::timerCallback,this);
+    debugger_cntrl=nh.advertise<std_msgs::String>("jaistquad/debug",1);
+
     lastTime=0;
-    zOFFSET=false;
+    zOFFSET=initialized_scale=false;
     zHeightoffset=navdataCount=0;
 
     //path planner localization
     robot_srv = nh.advertiseService("localization",&stateEstimation::localization,this);
+    calib_srv = nh.advertiseService("calibration",&stateEstimation::calibration,this);
 
     //yaw
-    lastYaw=0;
+    lastYaw=time_step=vel_sum=0;
     last_dot_yaw=0;
 
     //PUBLISHER TOPICS
@@ -28,28 +39,7 @@
      imu_pub= nh.advertise<nav_msgs::Odometry>("imu", 5);
 	 
 	 //writing files 
-	      
-          navDir="/home/redwan/Desktop/data/NaVmap.txt";
-          imuDir="/home/redwan/Desktop/data/ImUmap.txt";
-          slamDir="/home/redwan/Desktop/data/SlaMmap.txt";
-          fuseDir="/home/redwan/Desktop/data/FUSEDmap.txt";
-		  tumDir="/home/redwan/Desktop/data/TUMmap.txt";
-		  
-		  QString OnavDir="/home/redwan/Desktop/data/NaVmap_";
-          QString OimuDir="/home/redwan/Desktop/data/ImUmap_";
-          QString OslamDir="/home/redwan/Desktop/data/SlaMmap_";
-          QString OfuseDir="/home/redwan/Desktop/data/FUSEDmap_";
-		  QString OtumDir="/home/redwan/Desktop/data/TUMmap_";
-		  
-		  for(int i=1;QFile(navDir).exists()||QFile(imuDir).exists()||QFile(slamDir).exists()||QFile(fuseDir).exists();i++){
-            navDir=OnavDir+QString::number(i)+".txt";
-            imuDir=OimuDir+QString::number(i)+".txt";
-            slamDir=OslamDir+QString::number(i)+".txt";
-            fuseDir=OfuseDir+QString::number(i)+".txt";
-			tumDir=OtumDir+QString::number(i)+".txt";
-			
-			}
-     
+     logfile_Init();
 
 }
 
@@ -132,7 +122,7 @@
         }
         mutex.unlock();
 
-    return;
+//    return;
     switch (option){
         case NAVDATA: dataWrite(option,mirrorTransform(state));break;
         case IMUDATA: dataWrite(option,mirrorTransform(state));break;
@@ -189,8 +179,19 @@
 
 }
 
+ //change initalized_scale from gui
+ bool stateEstimation::calibration(active_slam::measurement::Request  &req,
+                   active_slam::measurement::Response &res)
+ {
+     debugger("calibration started");
+     sleep(1);
+     return initialized_scale=true;
+ }
+
+
+
  void stateEstimation::slamCb(const geometry_msgs::PoseConstPtr cam){
-    initialized_scale=true;
+  //  initialized_scale=true;
     Matrix3d R,R1;
     Eigen::Vector3d t(cam->position.x,cam->position.y,cam->position.z),RpY(cam->orientation.x,cam->orientation.y,cam->orientation.z);
     R << 1, 0, 0,   0, 0, -1,   0, 1, 0;
@@ -216,16 +217,43 @@
 }
 // scale estimation
  bool stateEstimation::computeVoScale(){
+    if(!initialized_scale||slamState.z==0){
+        resetState();
+        return false;
+    }
+    time_step++;
+    vel_sum+=imuState.ax;
+    if(slamState.z==0)return false;
+    static double init_y=slamState.y;
+    static double init_alt=slamState.z;
 
-    statespace nav2slam;
-    nav2slam=mirrorTransform(navState);
-    bool result=scaleEst->sampling(slamState.x,slamState.y,nav2slam.vx,nav2slam.vy,nav2slam.ax,nav2slam.ay);
+       int z_down;
+       if(init_alt<0)
+            z_down=init_alt/slamState.z;
+           else
+       z_down=slamState.z/init_alt;
+       bool result =false;
+          ROS_ERROR("Altitude %f",abs(z_down));
 
+    if(abs(z_down)>ALT_TH)
+        result=true;
+
+    //scaleEst->sampling(slamState.x,slamState.y,nav2slam.vx,nav2slam.vy,nav2slam.ax,nav2slam.ay);
      if(result){
-         VOSCALE=scaleEst->voScale();
+         VOSCALE=1/abs(slamState.y-init_y);
+
+         VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
+         ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
+
          resetState();
          VOSTART =true;
          initialized_scale=false;
+         stringstream ss;
+         ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
+             <<" time_step "<<ACC_SCALE;
+         debugger(ss.str());
+         sleep(1);
+         time_step=vel_sum=0;
      }
  }
 
@@ -233,6 +261,7 @@
     geometry_msgs::Quaternion orientation=msg->orientation;
     geometry_msgs::Vector3 angular_velocity=msg->angular_velocity;
     geometry_msgs::Vector3 linear_acceleration=msg->linear_acceleration;
+
 
     double roll, pitch, yaw;
     tf::Quaternion q(orientation.x,orientation.y,orientation.z,orientation.w);
@@ -427,25 +456,16 @@ bool stateEstimation::localization(active_slam::obstacle::Request  &req,
 
 }
  void stateEstimation::dataWrite(SENSOR_DATA option, statespace state){
-    QString name;
-      switch (option){
-          case NAVDATA:name=navDir;break;
-          case IMUDATA:name=imuDir;break;
-          case SLAMDATA:name=slamDir;break;
-          case FUSEDATA:name=fuseDir;break;
-      }
 
-        QFile file(name);
-                    file.open(QIODevice::Append | QIODevice::Text);
+    float a[10]={getMS(),state.x,state.y,state.z,state.vx,state.vy,state.vz,state.ax,state.ay,state.az};
+    switch (option){
+        case NAVDATA:      NaVmap   ->dataWrite(a,10); break;
+        case IMUDATA:      ImUmap   ->dataWrite(a,10); break;
+        case SLAMDATA:     SlaMmap  ->dataWrite(a,10); break;
+        case FUSEDATA:     FUSEDmap ->dataWrite(a,10); break;
+    }
 
-                    if(file.isOpen()){
-                          QTextStream outStream(&file);
-                            outStream<<
-                                        getMS()<<"\t"<< state.vx<<"\t"<<state.vy<<"\t"<<state.vz<<"\t"<<
-                                        state.ax<<"\t"<<state.ay<<"\t"<<state.az<<"\n";
 
-                    }
-                    file.close();
 
 
 }
@@ -480,36 +500,47 @@ bool stateEstimation::localization(active_slam::obstacle::Request  &req,
      msg.push_back(ukfState.phi);
      msg.push_back(ukfState.theta);
 
-
-         //    POSITION
-//     msg.push_back(ukfState.x/6.5);
-//     msg.push_back(ukfState.y/5);
-//     msg.push_back(ukfState.z);
-//     //    VELOCITY
-//     msg.push_back(ukfState.vx);
-//     msg.push_back(ukfState.vy);
-//     msg.push_back(ukfState.vz);
-//     //    ORIENTATION
-//     //PITCH
-//     msg.push_back(ukfState.phi/deg);
-//     //ROLL
-//     msg.push_back(-ukfState.theta/deg);
-//     //YAW
-//     msg.push_back(-ukfState.psi/deg);
-
-//     double dyaw=(ukfState.psi-lastYaw)*ukfState.t;
-// //     double dyaw =0;
-//     msg.push_back(0*dyaw/deg);
-//     //    UTILITIES
-//     msg.push_back(batteryStatus);
-//     msg.push_back(movingState);
-//     if (lastYaw!=ukfState.psi)
-//     {
-//        lastYaw=ukfState.psi;
-//     }
-    
-
      mutex.unlock();
       return msg;
 
  }
+
+
+ void stateEstimation::logfile_Init(){
+
+     ROS_WARN("initialization of datalogger");
+
+     NaVmap   =new datalogger;
+     ImUmap   =new datalogger;
+     SlaMmap  =new datalogger;
+     FUSEDmap =new datalogger;
+//     TUMmap   =new datalogger;
+
+     string headername[] = {"MS","x","y","z","vx","vy","vz","ax","ay","az"   };
+     NaVmap->fileName("Navdata_log");
+     ImUmap->fileName("Imudata_log");
+     SlaMmap->fileName("VOdata_log");
+     FUSEDmap->fileName("SensorFusion_log");
+//     TUMmap->fileName("TUMmap");
+
+     sleep(1);
+
+     NaVmap   ->addHeader(headername,10);
+     ImUmap   ->addHeader(headername,10);
+     SlaMmap  ->addHeader(headername,10);
+     FUSEDmap ->addHeader(headername,10);
+//     TUMmap   ->addHeader(headername);
+
+ }
+
+ void stateEstimation::debugger(std::string ss){
+     std_msgs::String debug_cntr;
+     debug_cntr.data=ss;
+     debugger_cntrl.publish(debug_cntr);
+     ROS_INFO_STREAM(ss);
+ }
+
+// double stateEstimation::distance(double x1, double y1, double x2, double y2)
+// {
+//     return sqrt(pow((x1-x2),2)+pow((y1-y2),2));
+// }

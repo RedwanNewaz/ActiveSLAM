@@ -3,6 +3,8 @@
 
 #include "../header.h"
 #include "active_slam/obstacle.h"
+#include "active_slam/measurement.h"
+#include "../../hexTree/datalogger.h"
 #define nano 1000000000.00
 #define T6 1000000.00
 #define T3 1000.00
@@ -10,10 +12,12 @@
 #define cm 1000.00
 #define g 9.81
 #define deg 0.0174532925
+#define ALT_TH 2.5
 
 
 
 class scale;
+class datalogger;
 using namespace Eigen;
 using namespace std;
 
@@ -115,7 +119,7 @@ public:
 
 private:
     double batteryStatus;
-    double VOSCALE;
+    double VOSCALE,VEL_SCALE,ACC_SCALE,time_step,vel_sum;
     double est_altd;
     double lastYaw;
     int movingState;
@@ -132,7 +136,7 @@ private:
 
     ros::Time starttime;
     uint32_t navdataCount;
-
+    ros::Publisher debugger_cntrl;
     ros::Publisher slam_pub;
     ros::Publisher nav_pub;
     ros::Publisher imu_pub;
@@ -140,12 +144,14 @@ private:
     ros::Timer timer;
 
     //path planner localization
-    ros::ServiceServer robot_srv;
+    ros::ServiceServer robot_srv,calib_srv;
+    datalogger *NaVmap,*ImUmap,*SlaMmap,*FUSEDmap,*TUMmap;
 
 
 protected:
     double timeDiff(ros::Time start);
     void state2navData(statespace state, char* dataType);
+    void logfile_Init();
     void resetState();
     void timerCallback(const ros::TimerEvent& e);
     stateEstimation::statespace mirrorTransform(statespace);
@@ -153,8 +159,10 @@ protected:
     bool localization(active_slam::obstacle::Request  &req,
                       active_slam::obstacle::Response &res);
 
+    bool calibration(active_slam::measurement::Request  &req,
+                     active_slam::measurement::Response &res);
 
-
-};
+    void debugger(std::string ss);
+    };
 
 #endif // STATEESTIMATION_H

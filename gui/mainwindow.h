@@ -59,6 +59,7 @@ private slots:
     void timeChanged();
     void sub_write(const QImage &frame);
     void updateBattery(double status);
+    void updateIntensity(double status);
     void sub_debug(QString);
 
 
@@ -68,6 +69,8 @@ private slots:
     void on_button_motion_clicked();
 
     void on_btn_test_clicked();
+
+    void on_btn_calibration_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -87,7 +90,7 @@ private:
     ros_launch *sensor_subs;
     QStringList topicList,executionList;
     QProcess *process,*process_action;
-    ros::ServiceClient client,test_obs_clinet;
+    ros::ServiceClient client,test_obs_clinet,calibration_client;
     ros::ServiceClient plannerclient;
     ros::NodeHandle n;
 
@@ -107,6 +110,7 @@ private:
     QProcess *process_cntrl,*process_plan, *process_extra;
     QProcess *process_ukf,*process_ardrone, *process_slam;
     bool subprograms;
+    int lightIntensity;
 
 
 

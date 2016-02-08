@@ -17,10 +17,7 @@
 #include "sensor_msgs/PointCloud2.h"
 #include <ros/macros.h>
 #include <sensor_msgs/Image.h>
-#include <QThread>
-#include <QImage>
-#include <QDebug>
-#include <QMutex>
+
 #include <image_transport/image_transport.h>
 #include <opencv2/core/core.hpp>
 #include "geometry_msgs/Pose.h"
@@ -32,6 +29,9 @@
 #include "sensor_msgs/Imu.h"
 
 #include <QMutex>
+#include <QThread>
+#include <QImage>
+#include <QDebug>
 
 
 // state estimation

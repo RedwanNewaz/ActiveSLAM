@@ -1,12 +1,19 @@
 #include "infotree.h"
 #include <ros/ros.h>
 #include "display.h"
+
 using namespace std;
 infoTree::infoTree()
 {
     root=new infoNode;
     serialKey=0;
     visualize=new display();
+    datalog =new datalogger;
+    datalog->fileName("HexTree_log");
+    string headername[6] ={
+     "serial", "p_X", "p_Y", "Trav_cost", "Mes_info", "Heading"
+    };
+    datalog->addHeader(headername,6);
 
 }
 
@@ -37,6 +44,11 @@ void infoTree::parent_Measurement_Update(float cost,float info,int direction)
        root->parent->info=info;
        root->item=direction;
        logTree.push_back(*root);
+
+       float a[6]={serialKey,root->parent->location[0],root->parent->location[1],
+              root->parent->cost,root->parent->info,root->item
+       };
+       datalog->dataWrite(a,6);
 
 }
 

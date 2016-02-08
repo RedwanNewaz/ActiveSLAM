@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->displayBattery->setPalette(Qt::red);
+    ui->intensity->setPalette(Qt::blue);
 
     ui->robot_x->setPalette(Qt::red);
     ui->robot_y->setPalette(Qt::green);
@@ -34,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //cameara initialize
     cameraInit();
+    lightIntensity=0;
 
     //start timer
     timer->start(1000);
@@ -56,13 +58,14 @@ void MainWindow::on_buttonMoveit_clicked()
 
     QStringList cntrl, planner, octomap,extra;
     cntrl<<"active_slam"<<"motion";
-    planner<<"active_slam"<<"planner";
+    planner<<"active_slam"<<"seeking";
 
     QDir("/home/redwan/Desktop/updateFusion");
     extra<<"mav.launch";
 
     process_cntrl =new QProcess(this);
     process_cntrl->start("rosrun",cntrl);
+
 
     process_plan =new QProcess(this);
     process_plan->start("rosrun",planner);
@@ -123,6 +126,8 @@ void MainWindow::on_buttonStop_clicked()
 
        qDebug()<<"Application closing request accepted";
        notificationDisplay("Application closing request accepted");
+       QFile("/home/redwan/Desktop/data/log.txt").remove();
+
        if (timer->isActive()){
            timer->stop();
            sleep(1);
@@ -329,7 +334,8 @@ void MainWindow::processInit()
 
     //enable debugging
     client=n.serviceClient<active_slam::pidgain>("pid_gains");
-     test_obs_clinet=n.serviceClient<active_slam::obstacle>("obstacle");
+     test_obs_clinet=n.serviceClient<active_slam::measurement>("threshold");
+     calibration_client=n.serviceClient<active_slam::measurement>("calibration");
     plannerclient=n.serviceClient<active_slam::plannertalk>("motionplan");
     connect(sensor_subs,SIGNAL(sig_main_debugger(QString)),this,SLOT(sub_debug(QString)));
 
@@ -375,10 +381,12 @@ void MainWindow::sub_write(const QImage &frame)
 
 void MainWindow::updateBattery(double status)
 {
-
     ui->displayBattery->display(status);
-
-
+}
+void MainWindow::updateIntensity(double status)
+{
+     ui->intensity->display(int(status));
+     lightIntensity=status;
 }
 // UTILITIES
 
@@ -401,7 +409,9 @@ void MainWindow::processStarup(){
 
 void MainWindow::cameraInit(){
     connect(sensor_subs,SIGNAL(ardrone_battery(double)),this,SLOT(updateBattery(double)));
-     topicList<<"/ORB_SLAM/Frame"<<"/camera/image_raw"<<"/ardrone/image_raw";
+    connect(sensor_subs,SIGNAL(light_intensity(double)),this,SLOT(updateIntensity(double)));
+
+    topicList<<"/ORB_SLAM/Frame"<<"/camera/image_raw"<<"/ardrone/image_raw";
      ui->topics->addItems(topicList);
 }
 
@@ -580,9 +590,17 @@ void MainWindow::on_button_motion_clicked()
 
 void MainWindow::on_btn_test_clicked()
 {
-        active_slam::obstacle srv;
-        srv.request.state_x=0;
-        srv.request.state_y=0;
+    int x=lightIntensity-ui->threshold_box->currentIndex()-1;
+        active_slam::measurement srv;
+        srv.request.state=x;
         if (test_obs_clinet.call(srv))
-            ROS_INFO_STREAM(" reponseded  ");
+            ROS_INFO_STREAM(" reponseded  "<<x);
+}
+
+void MainWindow::on_btn_calibration_clicked()
+{
+    active_slam::measurement srv;
+    srv.request.state=1;
+    if (calibration_client.call(srv))
+        ROS_INFO_STREAM(" reponseded  ");
 }
