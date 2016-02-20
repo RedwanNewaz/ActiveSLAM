@@ -14,6 +14,7 @@
 {
     VOSCALE=1;
     scaleEst=new scale();
+    cntrl=new controller();
     resetState();
     starttime= ros::Time::now();
     batteryStatus=0;
@@ -211,6 +212,8 @@
     slamState.vx*=dt;slamState.vy*=dt;slamState.vz*=dt;
     slamState.ax= slamState.vx*dt;slamState.ay=slamState.vy*dt;slamState.az=slamState.vz*dt;
     slamState.phi=RpY(0);slamState.theta=RpY(1);slamState.psi=RpY(2);
+    if(VOSTART)
+    cntrl->v_slam_time_update(getMS());
 
 
 

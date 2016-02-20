@@ -64,6 +64,7 @@ public:
         vector<double>x,y;
         int index;
     }traj;
+    void v_slam_time_update(double t);
 
 private:
 
@@ -72,10 +73,11 @@ private:
     ros::NodeHandle nh;
     ros::Publisher vel_pub;
     ros::ServiceServer service,attribute,threshold;
-    bool testingMode;
+    bool nocomm_vslam,land_cmd;
     int count;
     int resetController;
     double error;
+    double vslam_count;
 
     //QT
     QString fileName;

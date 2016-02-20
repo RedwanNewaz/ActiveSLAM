@@ -112,7 +112,7 @@ bool controller::gainchange(active_slam::pidgain::Request  &req,
 
 
 void controller::motionType(int i){
-    EnableTraj=EnableP2P=testingMode=EnableCircle=false;
+    EnableTraj=EnableP2P=EnableCircle=false;
     switch (i){
         case 1:EnableP2P=true;   debugger("p2p motion selected");   break;
         case 2:EnableTraj=true;squarBox(); debugger("Square motion selected");   break;
@@ -154,7 +154,9 @@ void controller::squarBox(){
  * 4) if obstacle detected send garbage value to the path
  */
 
-
+void controller::v_slam_time_update(double t){
+    vslam_count=t;
+}
 
 void controller::trajCallback(const geometry_msgs::PoseArrayConstPtr msg){
 //     //reseting store trajectory
@@ -308,6 +310,14 @@ void controller::run(const ros::TimerEvent& e){
         return;
     }
 
+    double dt=(getMS()-vslam_count)/10000;
+    if(dt>1)
+        nocomm_vslam=true;
+    else
+        nocomm_vslam=false;
+
+
+
     if(resetController>30){
         global_index++;
         float a[3]={global_index,traj.index,error};
@@ -317,11 +327,11 @@ void controller::run(const ros::TimerEvent& e){
         executingTraj();
         return;
     }
-Eigen::Vector4d u_cmd;
-mutex.lock();
-        u_cmd = Ar_drone_input();
+    Eigen::Vector4d u_cmd;
+    mutex.lock();
+            u_cmd = Ar_drone_input();
 
-mutex.unlock();
+    mutex.unlock();
 
 
     // IF ROBOT FINDS THE DESTINATION OR OBSTACLE DETECTED
@@ -413,7 +423,7 @@ mutex.unlock();
     cmd(2)*=UNITSTEP;
 
 //    GOAL CONVERGE
-        if( goalConverage()||obstacleStatus)
+        if( goalConverage()||obstacleStatus||nocomm_vslam)
             for(int i=0;i<4;i++)
                 cmd(i)=0;
 

@@ -5,6 +5,7 @@
 #include "active_slam/obstacle.h"
 #include "active_slam/measurement.h"
 #include "../../hexTree/datalogger.h"
+#include "../planner/controller.h"
 #define nano 1000000000.00
 #define T6 1000000.00
 #define T3 1000.00
@@ -17,6 +18,7 @@
 
 
 class scale;
+class controller;
 class datalogger;
 using namespace Eigen;
 using namespace std;
@@ -132,6 +134,7 @@ private:
 	QString navDir,imuDir,slamDir,fuseDir,tumDir;
 
     scale *scaleEst;
+    controller *cntrl;
 
 
     ros::Time starttime;
