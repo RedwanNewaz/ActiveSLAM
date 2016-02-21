@@ -561,29 +561,29 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_button_motion_clicked()
 {
-    active_slam::pidgain srv;
-    active_slam::plannertalk srv2;
-    srv.request.id=6;
+    active_slam::plannertalk srv;
+ //   active_slam::plannertalk srv2;
+//    srv.request.id=6;
     if(ui->p2p->isChecked())
-        srv.request.P=1;
+        srv.request.option=1;
     else if (ui->sb->isChecked())
-        srv.request.P=2;
+        srv.request.option=2;
     else if (ui->ca->isChecked())
-        srv.request.P=3;
+        srv.request.option=3;
     else if (ui->tc->isChecked())
-        srv.request.P=4;
+        srv.request.option=4;
 
-    if (client.call(srv))
-        ROS_INFO_STREAM("Motion is selected "<<srv.response);
+//    if (client.call(srv))
+//        ROS_INFO_STREAM("Motion is selected "<<srv.response);
 
-    if(ui->p2p->isChecked())
-        srv2.request.option=1;
-    else if(ui->tc->isChecked())
-         srv2.request.option=2;
-    else
-         srv2.request.option=3;
+//    if(ui->p2p->isChecked())
+//        srv2.request.option=1;
+//    else if(ui->tc->isChecked())
+//         srv2.request.option=2;
+//    else
+//         srv2.request.option=3;
 
-    if (plannerclient.call(srv2))
+    if (plannerclient.call(srv))
         ROS_INFO_STREAM("plannerMotion is changed "<<srv.response);
 
 }

@@ -14,7 +14,7 @@
 #include "active_slam/obstacle.h"
 #include "geometry_msgs/Quaternion.h"
 #include "std_msgs/Empty.h"
-#include "active_slam/sensor.h"
+
 
 
 controller::controller()
@@ -27,6 +27,8 @@ controller::controller()
     service = nh.advertiseService("pid_gains",&controller::gainchange,this);
     attribute = nh.advertiseService("measurement",&controller::measurements_attribute,this);
     threshold = nh.advertiseService("threshold",&controller::measurements_threshold,this);
+    mode = nh.advertiseService("motionplan",&controller::talk,this);
+    camPose_sub=nh.subscribe("/slam/camera",10,&controller::camCallback, this);
 
     obs_srv=nh.serviceClient<active_slam::sensor>("xbee/measurements");
     xbee	   = nh.subscribe("xbeeReading",50, &controller::xbeeRead, this);
@@ -44,15 +46,15 @@ controller::controller()
     global_index= error=0;;
 
     cntrl_per=new datalogger;
-    cntrl_per->fileName("contoller_performance_log");
-    string b[9]={"xErr","yErr", "zErr","oErr","inX","inY","inZ","inO","MS"};
-    cntrl_per->addHeader(b,9);
+    cntrl_per->fileName("contoller_performance_log");   
+    string b[11]={"xErr","yErr", "zErr","oErr","inX","inY","inZ","inO","MS","v_time","flag"};
+    cntrl_per->addHeader(b,11);
 
 
 
 
 //  controller intialize
-     count=obstacleStatus=resetController=traj.index==0;
+     count=obstacleStatus=resetController=traj.index=0;
      for(int i=0;i<4;i++)
          input.push_back(0);
      timer = nh.createTimer(ros::Duration(0.03), &controller::run,this);
@@ -115,34 +117,55 @@ void controller::motionType(int i){
     EnableTraj=EnableP2P=EnableCircle=false;
     switch (i){
         case 1:EnableP2P=true;   debugger("p2p motion selected");   break;
-        case 2:EnableTraj=true;squarBox(); debugger("Square motion selected");   break;
+        case 2:EnableTraj=true;  debugger("Square motion selected");   break;
         case 3:EnableCircle=true;debugger("Circular motion selected");   break;
         case 4:EnableTraj=true;  debugger("Traj Follower motion selected");   break;
     }
 }
 
-void controller::squarBox(){
+void controller::camCallback(const geometry_msgs::PoseConstPtr cam){
+    vslam_count=getMS();
+}
+
+
+void controller::modeSelction(int i){
     traj.x.clear();traj.y.clear();traj.index=0;
+   path.index=path.length=path.Obstacle=0;
 
-    //    goto (0,0)
-        traj.x.push_back(0);
-        traj.y.push_back(0);
+   switch (i){
+      case 2: //square box
+        //    goto (0,1)
+            traj.x.push_back(0);
+            traj.y.push_back(1.5);
+            //    goto (1,1)
+                traj.x.push_back(1.5);
+                traj.y.push_back(1.5);
+                //    goto (1,0)
+                    traj.x.push_back(1.5);
+                    traj.y.push_back(0);
+                    //    goto (0,0)
+                        traj.x.push_back(0);
+                        traj.y.push_back(0);
+       break;
+   case 3:
+       float x[100],y[100]; //read txt file
+        int n=cntrl_per->read_traj(x, y);
+        for (int i=0;i<n;i++){
+            traj.x.push_back(x[i]);
+            traj.y.push_back(y[i]);
+        }
+       break;
 
-//    goto (0,1)
-    traj.x.push_back(0);
-    traj.y.push_back(1.5);
-    //    goto (1,1)
-        traj.x.push_back(1.5);
-        traj.y.push_back(1.5);
-        //    goto (1,0)
-            traj.x.push_back(1.5);
-            traj.y.push_back(0);
-            //    goto (0,0)
-                traj.x.push_back(0);
-                traj.y.push_back(0);
+
+}
 
 
-                   controller_Status=RECEVIED;
+                   controller_Status=EXECUTING;
+                   path.length=traj.x.size();
+                   std::stringstream debug_cntrle;
+                   debug_cntrle<<path.length;
+                   debugger("new traj received "+debug_cntrle.str());
+                   ROS_INFO_STREAM("new traj received "<<path.length);
                    executingTraj();
 
 }
@@ -154,9 +177,7 @@ void controller::squarBox(){
  * 4) if obstacle detected send garbage value to the path
  */
 
-void controller::v_slam_time_update(double t){
-    vslam_count=t;
-}
+
 
 void controller::trajCallback(const geometry_msgs::PoseArrayConstPtr msg){
 //     //reseting store trajectory
@@ -310,17 +331,17 @@ void controller::run(const ros::TimerEvent& e){
         return;
     }
 
-    double dt=(getMS()-vslam_count)/10000;
+    double dt=(getMS()-vslam_count)/1000;
     if(dt>1)
         nocomm_vslam=true;
     else
         nocomm_vslam=false;
 
 
-
     if(resetController>30){
         global_index++;
-        float a[3]={global_index,traj.index,error};
+        stablizing=false;
+        float a[3]={global_index,traj.index,sqrt(error)};
         log->dataWrite(a,3);
         traj.index++;
         resetController=0;
@@ -403,21 +424,26 @@ mutex.unlock();
 
     //UPDATE CMD BASED ON PD GAIN
     Eigen::Vector4d cmd=kp*X_error+kd*X_dot_error;
+    ROS_INFO_STREAM("sig1 "<<cmd.transpose());
 
     // ROUNDING INPUTS
     float max=cmd.maxCoeff();
     for(int i=0;i<4;i++)
         if(abs(cmd(i))<0.33*abs(max))// TOO SMALL!
             cmd(i)=0;
-        else
-            cmd(i)=cmd(i)/abs(cmd(i))*UNITSTEP;
+        else if (abs(cmd(i))>0)
+            cmd(i)=cmd(i)/abs(max)*UNITSTEP;
+        ROS_INFO_STREAM("sig2 "<<cmd.transpose());
 
     // MAKE YAW CONTROLLER SLAGGISH
     double max_yaw=10*degree;
+    if(!setpoint.empty()){
     if (abs(X_error(3))<max_yaw)
         cmd(3)=0;
-    else
+    else if (abs(X_error(3))>0)
          cmd(3)=X_error(3)/abs(X_error(3))*UNITSTEP;
+    }
+     ROS_INFO_STREAM("sig3 "<<cmd.transpose());
 
         // MAKE ALT CONTROLLER SLAGGISH
     cmd(2)*=UNITSTEP;
@@ -428,7 +454,7 @@ mutex.unlock();
                 cmd(i)=0;
 
 //    //AVOID OBSTACLES
-
+ ROS_INFO_STREAM("sig4 "<<cmd.transpose());
     switch(obstacleStatus){
         case 2: path.Obstacle=1; cmd(0)=UNITSTEP;break; //   LEFT IS OCCUPIED ROLL RIGHT
         case 3: path.Obstacle=1; cmd(0)=-UNITSTEP;break; //   RIGHT IS OCCUPIED ROLL LEFT
@@ -441,7 +467,7 @@ mutex.unlock();
     if(!input.empty()) input.clear();
     for(int i=0;i<4;i++)
         input.push_back(cmd(i));
-
+ ROS_INFO_STREAM("sig5 "<<cmd.transpose());
 
     dataWrite();
 
@@ -469,8 +495,10 @@ mutex.unlock();
 
  bool controller::goalConverage(){
     error=0;
+    if(!setpoint.empty())
     for (int i=0;i<2;i++)
         error+=pow(setpoint.at(i)-X(i),2);
+    ROS_INFO_STREAM("Error"<<error);
 
     //Avoid obstacle
 //    if(path.Obstacle && !obstacleStatus){
@@ -485,11 +513,17 @@ mutex.unlock();
     if(sqrt(error)<STOP)
     {
 //        updateMeasurement();
+        stablizing=true;
         ROS_INFO_STREAM("Target "<< sqrt(error) <<" Achieved "<< resetController);
         resetController+=1;
         return true;
     }
-    else
+    else if(stablizing){
+        resetController+=1;
+        return true;
+    }
+
+        else
         return false;
 }
 
@@ -566,19 +600,30 @@ void controller::dataWrite(){
     if(input.empty()){
         ROS_ERROR("Controller input is empty");
         return; }
-    float data[9];
+    float data[11];
     for(int i=0;i<4;i++){
         data[i]=X_error(i);
         data[4+i]=input.at(i);
     }
     data[8]=getMS();
+    data[9]=vslam_count;
+    data[10]=int(nocomm_vslam);
 
-    cntrl_per->dataWrite(data,9);
+    cntrl_per->dataWrite(data,11);
     input.clear();
 
 }
 
 //----------------services
+
+bool controller::talk(active_slam::plannertalk::Request  &req,
+         active_slam::plannertalk::Response &res)
+{
+   modeSelction(req.option);
+   res.result=true;
+   return true;
+}
+
 
 bool controller::measurements_attribute(active_slam::measurement::Request  &req,
                                    active_slam::measurement::Response &res)

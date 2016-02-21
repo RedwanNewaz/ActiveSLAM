@@ -134,7 +134,6 @@ private:
 	QString navDir,imuDir,slamDir,fuseDir,tumDir;
 
     scale *scaleEst;
-    controller *cntrl;
 
 
     ros::Time starttime;

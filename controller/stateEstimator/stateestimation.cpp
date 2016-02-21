@@ -14,7 +14,7 @@
 {
     VOSCALE=1;
     scaleEst=new scale();
-    cntrl=new controller();
+    //cntrl=new controller();
     resetState();
     starttime= ros::Time::now();
     batteryStatus=0;
@@ -212,8 +212,8 @@
     slamState.vx*=dt;slamState.vy*=dt;slamState.vz*=dt;
     slamState.ax= slamState.vx*dt;slamState.ay=slamState.vy*dt;slamState.az=slamState.vz*dt;
     slamState.phi=RpY(0);slamState.theta=RpY(1);slamState.psi=RpY(2);
-    if(VOSTART)
-    cntrl->v_slam_time_update(getMS());
+    //if(VOSTART)
+    //cntrl->v_slam_time_update(getMS());
 
 
 
@@ -224,40 +224,59 @@
         resetState();
         return false;
     }
-    time_step++;
-    vel_sum+=imuState.ax;
-    if(slamState.z==0)return false;
-    static double init_y=slamState.y;
-    static double init_alt=slamState.z;
 
-       int z_down;
-       if(init_alt<0)
-            z_down=init_alt/slamState.z;
-           else
-       z_down=slamState.z/init_alt;
-       bool result =false;
-          ROS_ERROR("Altitude %f",abs(z_down));
 
-    if(abs(z_down)>ALT_TH)
-        result=true;
+        VOSCALE=5;
 
-    //scaleEst->sampling(slamState.x,slamState.y,nav2slam.vx,nav2slam.vy,nav2slam.ax,nav2slam.ay);
-     if(result){
-         VOSCALE=1/abs(slamState.y-init_y);
+        VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
+        ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
 
-         VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
-         ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
+        resetState();
+        VOSTART =true;
+        initialized_scale=false;
+        stringstream ss;
+        ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
+            <<" time_step "<<ACC_SCALE;
+        debugger(ss.str());
+        sleep(1);
+        time_step=vel_sum=0;
 
-         resetState();
-         VOSTART =true;
-         initialized_scale=false;
-         stringstream ss;
-         ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
-             <<" time_step "<<ACC_SCALE;
-         debugger(ss.str());
-         sleep(1);
-         time_step=vel_sum=0;
-     }
+
+
+//    time_step++;
+//    vel_sum+=imuState.ax;
+//    if(slamState.z==0)return false;
+//    static double init_y=slamState.y;
+//    static double init_alt=slamState.z;
+
+//       int z_down;
+//       if(init_alt<0)
+//            z_down=init_alt/slamState.z;
+//           else
+//       z_down=slamState.z/init_alt;
+//       bool result =false;
+//          ROS_ERROR("Altitude %f",abs(z_down));
+
+//    if(abs(z_down)>ALT_TH)
+//        result=true;
+
+//    //scaleEst->sampling(slamState.x,slamState.y,nav2slam.vx,nav2slam.vy,nav2slam.ax,nav2slam.ay);
+//     if(result){
+//         VOSCALE=1/abs(slamState.y-init_y);
+
+//         VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
+//         ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
+
+//         resetState();
+//         VOSTART =true;
+//         initialized_scale=false;
+//         stringstream ss;
+//         ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
+//             <<" time_step "<<ACC_SCALE;
+//         debugger(ss.str());
+//         sleep(1);
+//         time_step=vel_sum=0;
+//     }
  }
 
  void stateEstimation::imudataCb(const sensor_msgs::ImuConstPtr msg){

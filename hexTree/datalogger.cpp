@@ -88,6 +88,7 @@ void datalogger::changePath(QString new_path){
     path=new_path;
 
 }
+
 QString datalogger::read_log_file(QString log){
     QFile file(log);
     file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -97,4 +98,34 @@ QString datalogger::read_log_file(QString log){
 
         data=file.readLine();
     return data;
+}
+int datalogger::read_traj(float* x, float* y){
+       QString log="/home/redwan/Desktop/data/trajectory.txt";
+    read_traj_file_protect( log);
+    for (int i=0;i<traj_x.size();i++){
+        x[i]=traj_x.at(i);
+        y[i]=traj_y.at(i);
+    }
+    return traj_x.size();
+}
+
+void datalogger::read_traj_file_protect(QString log){
+    QFile file(log);
+    if(!file.exists())return;
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    traj_x.clear();traj_y.clear();
+
+    while(!file.isOpen())
+        file.close();
+    while(!file.atEnd()){
+        QString data=file.readLine();
+        QStringList list=data.split("\t",QString::SkipEmptyParts);
+
+        if(list.size()>1){
+        traj_x.push_back(list[0].toDouble());
+        traj_y.push_back(list[1].toDouble());
+         qDebug()<<list[0].toDouble()<<"\t"<<list[1].toDouble();
+        }
+    }
+
 }

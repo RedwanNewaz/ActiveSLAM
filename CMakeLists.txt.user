@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.4.1, 2016-02-20T12:30:42. -->
+<!-- Written by QtCreator 3.4.1, 2016-02-21T13:07:56. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -3834,7 +3834,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">float64_test</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">float64_test (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.float64_test</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -3885,7 +3885,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">ardrone_test_node</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">ardrone_test_node (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.ardrone_test_node</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -3936,7 +3936,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">second_order_plant</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">second_order_plant (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.second_order_plant</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -3987,7 +3987,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">first_order_plant</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">first_order_plant (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.first_order_plant</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -4038,7 +4038,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">jog_plant</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">jog_plant (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.jog_plant</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -4089,7 +4089,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">controller</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">controller (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.controller</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -4191,7 +4191,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">rosserial_server_serial_node</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">rosserial_server_serial_node (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.rosserial_server_serial_node</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
@@ -4242,7 +4242,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">rosserial_server_socket_node</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">rosserial_server_socket_node (disabled)</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.rosserial_server_socket_node</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>

@@ -4,7 +4,7 @@
 #define degree 0.0174533
 #define UNITSTEP 0.1
 #define FREQUENCY 30.00
-#define STOP 0.2
+#define STOP 0.3
 #define MAX_VEL 2
 #define GARBAGE_MES 1000
 // #define red 10.00
@@ -16,8 +16,11 @@
 #include <Eigen/Core>
 #include <QString>
 #include <QMutex>
+#include <QDebug>
 #include "geometry_msgs/PoseArray.h"
 #include "active_slam/measurement.h"
+#include "active_slam/sensor.h"
+#include "active_slam/plannertalk.h"
 
 #include "../header.h"
 #include "../../hexTree/datalogger.h"
@@ -64,7 +67,7 @@ public:
         vector<double>x,y;
         int index;
     }traj;
-    void v_slam_time_update(double t);
+
 
 private:
 
@@ -72,8 +75,8 @@ private:
     ros::Timer timer;
     ros::NodeHandle nh;
     ros::Publisher vel_pub;
-    ros::ServiceServer service,attribute,threshold;
-    bool nocomm_vslam,land_cmd;
+    ros::ServiceServer service,attribute,threshold,mode;
+    bool nocomm_vslam,land_cmd,stablizing;
     int count;
     int resetController;
     double error;
@@ -95,7 +98,7 @@ private:
 
     //debugger
     ros::Publisher debugger_cntrl,land_pub;
-    ros::Subscriber xbee;
+    ros::Subscriber xbee,camPose_sub;
 
     std_msgs::String debug_cntr;
 
@@ -163,7 +166,7 @@ protected:
     void updateGain();
     void wrtieGain();
     void motionType(int);
-    void squarBox();
+    void modeSelction(int);
     void HoveringMode();
 
     void SendMeasurementPacket();
@@ -182,6 +185,9 @@ protected:
     bool measurements_threshold(active_slam::measurement::Request  &req,
                                 active_slam::measurement::Response &res);
     void xbeeRead(const geometry_msgs::QuaternionConstPtr);
+    bool talk(active_slam::plannertalk::Request  &req,
+             active_slam::plannertalk::Response &res);
+    void camCallback(const geometry_msgs::PoseConstPtr cam);
 
 
 
