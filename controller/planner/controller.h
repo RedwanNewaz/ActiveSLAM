@@ -24,8 +24,16 @@
 
 #include "../header.h"
 #include "../../hexTree/datalogger.h"
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <iterator>
 
 
+inline float min_ele_vec(std::vector<float> v){
+  std::vector<float>::iterator result = std::min_element(v.begin(), v.end());
+  return result[0];
+}
 
 
 //prediction model coefficient
@@ -153,6 +161,7 @@ private:
 //datalogger
             datalogger *log,*cntrl_per;
             int global_index;
+            vector<float> converage;
 
 protected:
 

@@ -340,8 +340,10 @@ void controller::run(const ros::TimerEvent& e){
 
     if(resetController>30){
         global_index++;
+
         stablizing=false;
-        float a[3]={global_index,traj.index,sqrt(error)};
+        float a[3]={global_index,traj.index,min_ele_vec(converage)};
+        converage.clear();
         log->dataWrite(a,3);
         traj.index++;
         resetController=0;
@@ -510,19 +512,15 @@ mutex.unlock();
 //    }
 
         //check goal radius
-    if(sqrt(error)<STOP)
+    if(sqrt(error)<STOP ||stablizing)
     {
 //        updateMeasurement();
+        converage.push_back(sqrt(error));
         stablizing=true;
         ROS_INFO_STREAM("Target "<< sqrt(error) <<" Achieved "<< resetController);
         resetController+=1;
         return true;
     }
-    else if(stablizing){
-        resetController+=1;
-        return true;
-    }
-
         else
         return false;
 }
@@ -556,7 +554,7 @@ void controller::wrtieGain(){
     file.close();
 }
 
-void controller:: readGain(){
+void controller::readGain(){
     QFile file("/home/redwan/Desktop/pidtune.txt");
     if (!file.exists())
     {
