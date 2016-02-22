@@ -226,9 +226,9 @@
     }
 
 
-        VOSCALE=5;
+        VOSCALE=50;
 
-        VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
+        VEL_SCALE=VOSCALE;
         ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
 
         resetState();

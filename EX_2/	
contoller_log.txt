@@ -1,5 +1,0 @@
-global_index	path_index	uncertainty	
-1	0	1.36772	
-2	1	0.872887	
-3	2	0.99618	
-4	3	0.576189	
