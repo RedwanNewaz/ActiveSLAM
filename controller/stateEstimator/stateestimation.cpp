@@ -123,13 +123,14 @@
         }
         mutex.unlock();
 
-//    return;
+  return;
+  /*
     switch (option){
         case NAVDATA: dataWrite(option,mirrorTransform(state));break;
         case IMUDATA: dataWrite(option,mirrorTransform(state));break;
         case SLAMDATA:dataWrite(option,state);break;
     }
-
+    */
 }
 
  void stateEstimation::resetState(){
@@ -184,7 +185,15 @@
  bool stateEstimation::calibration(active_slam::measurement::Request  &req,
                    active_slam::measurement::Response &res)
  {
-     debugger("calibration started");
+     stringstream ss;
+
+     VOSCALE=req.state;
+     resetState();
+     VOSTART =true;
+     initialized_scale=false;
+
+     ss<<"VO SCALE "<<VOSCALE;
+     debugger("calibration started "+ss.str());
      sleep(1);
      return initialized_scale=true;
  }
@@ -226,57 +235,7 @@
     }
 
 
-        VOSCALE=50;
 
-        VEL_SCALE=VOSCALE;
-        ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
-
-        resetState();
-        VOSTART =true;
-        initialized_scale=false;
-        stringstream ss;
-        ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
-            <<" time_step "<<ACC_SCALE;
-        debugger(ss.str());
-        sleep(1);
-        time_step=vel_sum=0;
-
-
-
-//    time_step++;
-//    vel_sum+=imuState.ax;
-//    if(slamState.z==0)return false;
-//    static double init_y=slamState.y;
-//    static double init_alt=slamState.z;
-
-//       int z_down;
-//       if(init_alt<0)
-//            z_down=init_alt/slamState.z;
-//           else
-//       z_down=slamState.z/init_alt;
-//       bool result =false;
-//          ROS_ERROR("Altitude %f",abs(z_down));
-
-//    if(abs(z_down)>ALT_TH)
-//        result=true;
-
-//    //scaleEst->sampling(slamState.x,slamState.y,nav2slam.vx,nav2slam.vy,nav2slam.ax,nav2slam.ay);
-//     if(result){
-//         VOSCALE=1/abs(slamState.y-init_y);
-
-//         VEL_SCALE=(1/(pow(time_step*0.03,2)*vel_sum));
-//         ACC_SCALE=VEL_SCALE*VEL_SCALE/2;
-
-//         resetState();
-//         VOSTART =true;
-//         initialized_scale=false;
-//         stringstream ss;
-//         ss<<"VO SCALE "<<VOSCALE <<" VEL_SCALE "<<VEL_SCALE
-//             <<" time_step "<<ACC_SCALE;
-//         debugger(ss.str());
-//         sleep(1);
-//         time_step=vel_sum=0;
-//     }
  }
 
  void stateEstimation::imudataCb(const sensor_msgs::ImuConstPtr msg){
@@ -427,7 +386,7 @@ bool stateEstimation::localization(active_slam::obstacle::Request  &req,
      Eigen::Vector3d slaMori(slamState.phi,slamState.theta,slamState.psi);
      ukfState.phi=slaMori(0);ukfState.theta=slaMori(1);ukfState.psi=slaMori(2);
     mutex.unlock();
-//     dataWrite(FUSEDATA,ukfState);
+    dataWrite(FUSEDATA,ukfState);
 
  }
 
@@ -562,7 +521,3 @@ bool stateEstimation::localization(active_slam::obstacle::Request  &req,
      ROS_INFO_STREAM(ss);
  }
 
-// double stateEstimation::distance(double x1, double y1, double x2, double y2)
-// {
-//     return sqrt(pow((x1-x2),2)+pow((y1-y2),2));
-// }

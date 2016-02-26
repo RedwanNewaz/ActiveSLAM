@@ -600,7 +600,12 @@ void MainWindow::on_btn_test_clicked()
 void MainWindow::on_btn_calibration_clicked()
 {
     active_slam::measurement srv;
-    srv.request.state=1;
+    int option =ui->scale_cal->currentIndex();
+    switch(option){
+        case 0:srv.request.state=50;break;
+        case 1:srv.request.state=5;break;
+    }
+
     if (calibration_client.call(srv))
         ROS_INFO_STREAM(" reponseded  ");
 }

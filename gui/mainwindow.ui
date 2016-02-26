@@ -242,6 +242,20 @@
        </spacer>
       </item>
       <item>
+       <widget class="QComboBox" name="scale_cal">
+        <item>
+         <property name="text">
+          <string>LargeArea</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SmallArea</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btn_calibration">
         <property name="text">
          <string>calibration</string>
@@ -668,12 +682,12 @@
          <rect>
           <x>10</x>
           <y>80</y>
-          <width>117</width>
+          <width>151</width>
           <height>22</height>
          </rect>
         </property>
         <property name="text">
-         <string>Circular area</string>
+         <string>Offline Trajectory</string>
         </property>
        </widget>
        <widget class="QRadioButton" name="tc">

@@ -496,7 +496,7 @@ mutex.unlock();
   }
 
  bool controller::goalConverage(){
-    error=0;
+    error=1000;
     if(!setpoint.empty())
     for (int i=0;i<2;i++)
         error+=pow(setpoint.at(i)-X(i),2);
